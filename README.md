@@ -1,0 +1,4 @@
+fastwiki
+========
+
+Fast offline Wikipedia
