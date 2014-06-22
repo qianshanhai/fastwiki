@@ -1,0 +1,21 @@
+base/
+|-- include
+|   |-- bzlib.h              copy from bzlib
+|   |-- bzlib_private.h      copy from bzlib
+|   |-- lz4.h                copy from lz4
+|   |-- lz4hc.h              copy from lz4
+|   |-- crc32sum.h           
+|   |-- gzip_compress.h
+|   |-- prime.h
+|   |-- q_socket.h
+|   |-- q_util.h
+|   `-- s_hash.h
+`-- lib
+    |-- lz4.cpp              copy from lz4
+    |-- lz4hc.cpp            copy from lz4
+    |-- crc32sum.cpp         crc32
+    |-- prime.cpp            prime function
+    |-- q_socket.cpp         simple socket
+    |-- q_util.cpp           some utils function
+    `-- s_hash.cpp           simple Hash
+

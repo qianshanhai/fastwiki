@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"  
+	android:orientation="horizontal"  
+	android:layout_width="wrap_content" 
+	android:layout_height="wrap_content" 
+	android:background="@null"
+	android:id="@+id/find_layout"
+	>
+
+	<ImageButton
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/ic_nav_back_64"
+		android:layout_gravity="center_vertical"
+		android:id="@+id/find_prev"
+		/>
+
+	<EditText  
+		android:layout_width="150dip"  
+		android:layout_height="wrap_content"  
+		android:layout_alignParentLeft="true"
+		android:layout_gravity="center_vertical"
+		android:id="@+id/find_text"
+		android:text=""
+		/>  
+
+	<ImageButton
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/ic_nav_forward_64"
+		android:layout_gravity="center_vertical"
+		android:id="@+id/find_next"
+		/>
+
+</LinearLayout>

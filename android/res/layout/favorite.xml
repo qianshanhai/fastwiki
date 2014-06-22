@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"  
+	android:layout_width="fill_parent"  
+	android:layout_height="fill_parent"  
+	android:orientation="vertical"  
+	android:background="@drawable/white"  
+	> 
+	<LinearLayout 
+		android:id="@+id/favorite_top"  
+		android:orientation="horizontal"  
+		android:layout_width="fill_parent"  
+		android:layout_height="wrap_content"  
+		android:layout_margin="0dip"
+		android:shrinkColumns="0"  
+		>
+
+	<TextView android:id="@+id/favorite_txt"
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content"  
+		android:textSize="22dip" 
+		android:textColor="#ffffff"
+		android:layout_weight="1"
+		android:background="#000000"
+		/> 
+	<ImageButton  
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content"  
+		android:id="@+id/favorite_manage"  
+		android:layout_gravity="center_vertical"
+		android:src="@drawable/ic_setting"
+		android:background="#000000"
+		/>
+	<ImageButton  
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content"  
+		android:layout_alignParentRight="true"  
+		android:id="@+id/favorite_delete"  
+		android:layout_gravity="center_vertical"
+		android:src="@drawable/ic_delete"
+		android:background="#000000"
+		/>
+	</LinearLayout>  
+
+	<ListView android:id="@+id/favorite_list"  
+		android:orientation="horizontal"
+		android:layout_width="fill_parent"  
+		android:layout_height="wrap_content" 
+		>  
+	</ListView>  
+
+</LinearLayout>  

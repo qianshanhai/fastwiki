@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+	<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf8">
+	<meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+	<meta http-equiv="PRAGMA" content="NO-CACHE"> 
+
+	<style type="text/css">
+		body {
+			background:%s;
+			color:%s;
+			font-size:%dpt;
+		}
+		ul {
+			margin-top:0px;
+			margin-left:10px;
+			padding:6px;
+		}
+		ol {
+			margin-top:0px;
+			margin-left:26px;
+			padding:6px;
+		}
+		img {
+			height:auto;
+			width:auto;
+		}
+		a {
+			color:%s
+		}
+		a:link {
+			text-decoration: none;
+		}
+		a:visited {
+			text-decoration: none;
+		}
+		a:hover {
+			text-decoration: none;
+		}
+	</style>
+	<script language=javascript>
+		function set_font_size(n)
+		{
+			if (n > 3) {
+				document.body.style.fontSize = n + "pt";
+			}
+		}
+
+	function $(x) { return document.getElementById(x); }
+
+	function http_get(s)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open( "GET", "http://127.0.0.1:%d/" + s, false);
+		xmlHttp.send(null);
+		return xmlHttp.responseText;
+	}
+
+	function last_pos()
+	{
+		var x = %d;
+		var o_h = %d;
+		var h = document.body.scrollHeight;
+
+		if (x > 20) {
+			document.body.scrollTop=(x *h /o_h);
+		}
+	}
+	function set_pos()
+	{
+		var x = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;
+
+		android.real_set_pos(x, document.body.scrollHeight, document.documentElement.clientHeight);
+	}
+
+	function get_data()
+	{
+		var id;
+		var m = %d;
+
+		for (var i = 0; i < m; i++) {
+			id = "main" + i;
+			$(id).innerHTML = http_get("curr:" + i);
+		}
+		last_pos();
+	}
+
+	function next_page()
+	{
+		var x = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;
+		var y = document.body.scrollTop + document.documentElement.clientHeight - 20;
+
+		document.body.scrollTop = y > 0 ? y : 0;
+
+		if (document.body.scrollTop + document.documentElement.clientHeight >= document.body.scrollHeight) {
+			android.has_last_page();
+		}
+
+		android.real_set_pos(y, document.body.scrollHeight, document.documentElement.clientHeight);
+	}
+
+	function back_page()
+	{
+		var x = window.pageYOffset||document.documentElement.scrollTop||document.body.scrollTop; 
+		var y = document.body.scrollTop - window.screen.availHeight + 20;
+		document.body.scrollTop = y > 0 ? y : 0;
+		android.real_set_pos(y, document.body.scrollHeight, window.screen.availHeight);
+	}
+
+</script>
+</head>
+
+<body>
+
+SPLIT
+
+<div id=main0></div>
+<div id=main1></div>
+<div id=main2></div>
+<div id=main3></div>
+<div id=main4></div>
+<div id=main5></div>
+<div id=main6></div>
+<div id=main7></div>
+<div id=main8></div>
+<div id=main9></div>
+<div id=main10></div>
+<div id=main11></div>
+<div id=main12></div>
+<div id=main13></div>
+<div id=main14></div>
+<div id=main15></div>
+<div id=main16></div>
+<div id=main17></div>
+<div id=main18></div>
+<div id=main19></div>
+<div id=main20></div>
+
+</body>
+</html>
+

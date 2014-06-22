@@ -1,0 +1,124 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+		<style>
+		 .xx{background-color:white;}
+		 a:link {
+			 text-decoration: none;
+		 }
+		 </style>
+		 <title>Fastwiki</title>
+		<script language=javascript>
+			function $(x) { return document.getElementById(x); }
+
+			function http_get(s)
+			{
+				var xmlHttp = CreateAJAX();
+				xmlHttp.open( "GET", "http://%s/" + s, false);
+				xmlHttp.send(null);
+				return xmlHttp.responseText;
+			}
+
+			function CreateAJAX()
+			{
+				if (typeof(XMLHttpRequest) != "undefined")
+					return new XMLHttpRequest();
+
+				if(window.ActiveXObject){
+					var objs=[
+						"MSXML2.XMLHttp.5.0",
+						"MSXML2.XMLHttp.4.0",
+						"MSXML2.XMLHttp.3.0",
+						"MSXML2.XMLHttp",
+						"Microsoft.XMLHTTP"
+					];
+					var xmlhttp;
+					for (var i = 0; i < objs.length; i++){
+						try{
+							xmlhttp = new ActiveXObject(objs[i]);
+							return xmlhttp;
+						} catch(e){
+						} 
+					}
+				}  
+			}
+
+			function get_data(va)
+			{
+				var s;
+
+				va = $("in1").value;
+
+				if (va == "") {
+					$("test").innerHTML = "";
+					$("test").style.border = "solid 0px black";
+					return;
+				}
+				
+				$("test").style.display = "block"; 
+				$("test").style.border = "solid 1px black";
+				
+				s = http_get("F:" + va);
+				$("test").innerHTML = s;
+			}
+
+			function _submit()
+			{
+				get_data($("in1").value);
+			}
+
+			function get(url)
+			{
+				var s;
+
+				$("test").style.border = "solid 0px black";
+
+				s = http_get(url);
+				$("test").innerHTML = "";
+				$("main").innerHTML = s;
+			}
+
+			document.onkeydown = function(e){
+				e = e || event;
+				if (e.keyCode == 27) {
+					$("test").style.border = "solid 0px black";
+					$("test").style.display = "none"; 
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<form method=GET name=f1>
+			<table border=0>
+				<tr><td> Fastwiki: </td>
+					<td><input id=in1 type=text name=K autocomplete="off" size=40 >
+						<input type=button onclick="_submit()" value=submit> <br/>
+					</td>
+				</tr>
+				<tr><td>&nbsp;</td>
+					<td>
+						<div id=test class=xx style="display:block;position:absolute;"></div>
+					</td>
+				</tr>
+			</table>
+
+			<div id=main>
+				SPLIT
+			</div>
+		</form>
+		<script language=javascript>
+			/*
+			if (navigator.userAgent.indexOf("MSIE") > 0){
+				$('in1').onpropertychange = function(){
+					get_data(this.value);
+				};
+			}
+			*/
+				$('in1').oninput = function(){
+					get_data(this.value);
+				};
+
+			$('in1').value = "%s";
+		</script>
+</body>
+</html>

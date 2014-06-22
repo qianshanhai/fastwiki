@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"  
+	android:orientation="vertical"  
+	android:layout_width="wrap_content" 
+	android:layout_height="wrap_content" 
+	android:id="@+id/radio"
+	>
+	<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/scroll"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content" >
+	<RadioGroup  
+		android:id="@+id/radio_group"  
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content"  
+		android:orientation="vertical"  
+		android:background="#000000"
+		> 
+	</RadioGroup>      
+	</ScrollView>
+</LinearLayout>  

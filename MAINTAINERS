@@ -1,0 +1,7 @@
+List of maintainers and how to submit Fastwiki changes
+
+1. Except java code, using Linux kernel code style.
+2. Don't use any C++ STL
+3. Don't use any C++ advanced feature.
+4. Happy hacking.
+

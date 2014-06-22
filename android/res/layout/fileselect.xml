@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"  
+	android:layout_width="fill_parent"  
+	android:layout_height="fill_parent"  
+	android:orientation="vertical"  
+	android:background="@drawable/white"  
+	>  
+	<TextView android:id="@+id/mPath"  
+		android:layout_width="fill_parent"  
+		android:layout_height="wrap_content"  
+		android:padding="5px"  
+		android:textSize="18sp" 
+		android:textColor="@drawable/blue"  
+		>  
+	</TextView>  
+	<ListView android:id="@android:id/list"  
+		android:layout_width="fill_parent"  
+		android:layout_height="wrap_content" 
+		android:layout_weight="50"  
+		>  
+	</ListView>  
+	<LinearLayout android:gravity="center"  
+		android:layout_weight="15"
+		android:layout_width="fill_parent"  
+		android:layout_height="150px"
+		android:orientation="horizontal"  
+		android:background="@drawable/white">  
+		<Button android:id="@+id/buttonConfirm"    
+			android:layout_width="fill_parent"      
+			android:layout_height="wrap_content" 
+			android:layout_weight = "1"
+			android:text="select" />  
+		<Button android:id="@+id/buttonCancle"    
+			android:layout_width="fill_parent"      
+			android:layout_height="wrap_content"      
+			android:layout_weight = "1"
+			android:text="cancle" />  
+
+	</LinearLayout>  
+</LinearLayout>  

@@ -1,0 +1,27 @@
+
+1. set env ANDK in bashrc
+
+   set ANDK=/path/to/android-ndk
+
+2. android update project -p .
+
+3. compile base source
+
+   $ cd base/lib
+   $ ./release.sh
+   
+   or
+   $ android=yes make clean all
+
+4. compile jni
+
+   $ cd android/jni
+   $ ndk-build -B
+
+5. compile UI
+
+   $ cd android/
+   $ ant release  # key is "qwrite.info"
+
+   now will get bin/Fastwiki-release.apk
+
