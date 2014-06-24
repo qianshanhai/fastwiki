@@ -367,11 +367,11 @@ int Zim::zim_data_read(struct zim_tmp_title *st, char *title, char *redirect, ch
 			}
 			read(m_fd, m_tmp, size);
 			t_size = lzma_uncompress(m_tmp, (int)size, m_data, m_max_data_size);
-			m_data[t_size] = 0;
 			if (t_size <= 0) {
 				mylog("lzma_uncompress error\n");
 				return -1;
 			}
+			m_data[t_size] = 0;
 			m_mem_flag = 1;
 		} else {
 			if (size > m_max_data_size) {
