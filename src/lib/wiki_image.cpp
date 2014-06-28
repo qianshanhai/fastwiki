@@ -216,7 +216,8 @@ int WikiImage::we_output(char *buf)
 	we_add_done();
 	we_write_hash();
 
-	strcpy(buf, m_file_name);
+	if (buf)
+		strcpy(buf, m_file_name);
 
 	return 0;
 }
