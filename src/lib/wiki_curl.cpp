@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
  */
+#ifndef WIN32
 #include <string.h>
 #include <stdlib.h>
 
@@ -90,3 +91,4 @@ int WikiCurl::curl_get_data(int idx, const char *url, char **data, int *ret_len)
 
 	return 0;
 }
+#endif

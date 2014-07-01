@@ -4,6 +4,12 @@
 #include "prime.h"
 #include "wiki_image.h"
 
+#ifdef WIN32
+#define pthread_mutex_init(x, y) 
+#define pthread_mutex_lock(x) 
+#define pthread_mutex_unlock(x) 
+#endif
+
 WikiImage::WikiImage()
 {
 	m_init_flag = -1;

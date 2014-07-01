@@ -19,7 +19,8 @@ ifeq ($(system), Linux)
 libs = -lm -lbz2 -lz -lpthread -L$(root)/lib -lfastwiki -L$(libbase_lib) -lbase
 cppflag += -DO_BINARY=0
 else
-libs = -static -lm -lbz2 -lz -L$(MINGW_LIB) -lpthreadGC2 -static -L$(libbase_lib) -lbase -lws2_32 
+libs = -static -L$(root)/lib -L$(libbase_lib) -static -L$(MINGW_LIB) -lpthreadGC2 -lfastwiki -lbase -lws2_32 -lm -lbz2 -lz 
+# export MINGW_LIB=/c/MinGW/lib
 endif
 
 inc = -I. -D_FASTWIKI_BIN_ -I$(root)/lib -I$(libbase_inc)

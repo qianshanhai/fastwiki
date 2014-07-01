@@ -15,6 +15,7 @@
 
 #include "wiki_config.h"
 
+#ifdef FW_DEBUG
 int LOG(const char *fmt, ...)
 {
 	int n, now_n;
@@ -39,6 +40,7 @@ int LOG(const char *fmt, ...)
 
 	return n;
 }
+#endif
 
 WikiConfig::WikiConfig()
 {

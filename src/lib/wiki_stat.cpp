@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
  */
+#ifndef WIN32
 #include "prime.h"
 #include "wiki_stat.h"
 
@@ -349,3 +350,4 @@ int WikiStat::st_convert_file(const char *file, const char *output)
 		unsigned char ch = find_idx;
 	}
 }
+#endif
