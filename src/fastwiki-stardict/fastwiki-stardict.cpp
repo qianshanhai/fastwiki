@@ -14,7 +14,7 @@
 
 #include "fastwiki-dict.h"
 
-#ifndef _WIN32
+#ifdef _STARDICT_PERL
 extern int script_init(const char *file);
 extern int perl_content(char *ret_buf);
 #endif
@@ -127,7 +127,7 @@ static int init_option(struct fw_stardict_st *st, int argc, char **argv)
 	if (st->compress[0] == 0)
 		strcpy(st->compress, "gzip");
 
-#ifndef _WIN32
+#ifdef _STARDICT_PERL
 	if (dashf(st->perl_file) && script_init(st->perl_file) == 0)
 		st->perl_flag = 1;
 #endif
@@ -147,13 +147,8 @@ int dict_read_file(const char *file, char *buf, int size)
 {
 	int fd;
 
-#ifdef _WIN32
 	if ((fd = open(file, O_RDONLY | O_BINARY)) == -1)
 		return -1;
-#else
-	if ((fd = open(file, O_RDONLY)) == -1)
-		return -1;
-#endif
 
 	read(fd, buf, size);
 	close(fd);
@@ -208,7 +203,7 @@ int convert_dict(struct fw_stardict_st *st)
 		curr_content = pdata + index;
 		curr_content_len = size;
 		
-#ifndef _WIN32
+#ifdef _STARDICT_PERL
 		if (m_dict_option.perl_flag)
 		{
 			ret_len = perl_content(m_buf);

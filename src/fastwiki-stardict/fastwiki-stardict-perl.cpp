@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
  */
-#ifndef _WIN32
+#ifdef _STARDICT_PERL
 #include <sys/time.h>
 #include <setjmp.h>
 #include <stdlib.h>
@@ -173,7 +173,6 @@ int script_init(const char *file)
 
 int perl_content(char *ret_buf)
 {
-	dXSARGS;
 	eval_pv(m_content_script, TRUE);
 
 	SV *tmp;
