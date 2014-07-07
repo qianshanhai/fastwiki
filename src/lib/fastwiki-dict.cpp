@@ -1,6 +1,9 @@
 /*
  * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
  */
+#include <string.h>
+#include <stdlib.h>
+
 #include "wiki_common.h"
 #include "wiki_data.h"
 #include "wiki_index.h"

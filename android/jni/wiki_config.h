@@ -12,7 +12,6 @@
 
 #include "wiki_common.h"
 
-#define MAX_FD_TOTAL 32
 #define MAX_FW_DIR_TOTAL 10
 #define MAX_FW_DIR_LEN   80
 

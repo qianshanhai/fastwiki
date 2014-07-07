@@ -73,6 +73,11 @@ char *format_image_name(char *buf, int max_len)
 				i += 4;
 				continue;
 			}
+			if (strncasecmp(buf + i, "quot;", 5) == 0) {
+				tmp[pos++] = '"';
+				i += 5;
+				continue;
+			}
 		}
 		if (buf[i] == ':') {
 			tmp[pos++] = '.';
@@ -84,7 +89,7 @@ char *format_image_name(char *buf, int max_len)
 			continue;
 		}
 
-		if (buf[i] == ' ' || buf[i] == '\t' || buf[i] == '\n' || buf[i] == '-') {
+		if (buf[i] == ' ' || buf[i] == '\t' || buf[i] == '\n' || buf[i] == '-' || buf[i] == '_') {
 			continue;
 		}
 		tmp[pos++] = buf[i];
@@ -99,7 +104,7 @@ char *format_image_name(char *buf, int max_len)
 
 unsigned char hex(char ch)
 {
-	register unsigned char x = 0;
+	unsigned char x = 0;
 
 	if (ch >= 'a' && ch <= 'f')
 		x = ch - 'a' + 10;
@@ -113,7 +118,7 @@ unsigned char hex(char ch)
 
 unsigned char hex2ch(const char *buf)
 {
-	register unsigned char x, y;
+	unsigned char x, y;
 
 	x = hex(buf[0]);
 	y = hex(buf[1]);

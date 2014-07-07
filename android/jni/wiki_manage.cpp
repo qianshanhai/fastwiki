@@ -476,7 +476,7 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 {
 	char tmp[256];
 	const char *key  = tmp;
-	int n, pos, height;
+	int n, pos = 0, height = 0;
 	WikiData *wiki_data = CURR_WIKI(data);
 	WikiIndex *wiki_index = CURR_WIKI(index);
 
@@ -562,6 +562,9 @@ int WikiManage::wiki_view_index(int idx, char **buf, int *size)
 		*size = n;
 		return n;
 	}
+
+	*buf = m_buf;
+	*size = wiki_not_found(buf, size, NOT_FOUND);
 
 	return -1;
 }

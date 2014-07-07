@@ -22,6 +22,8 @@ class WikiSocket {
 		int ws_http_output_body(int sock, const char *data, int size);
 		const char *ws_get_host();
 
+		int ws_get_server_status();
+
 	private:
 
 		pthread_t m_id[128];

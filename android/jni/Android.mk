@@ -28,7 +28,7 @@ LOCAL_CFLAGS += $(debug_flag) -DFW_NJI -DHAVE_PTHREADS -DHAVE_ANDROID_OS=1 \
 				-DO_BINARY=0 -D_VERSION="\"$(shell cat VERSION | perl -pne chomp)\""
 
 LOCAL_LDLIBS    := -lz -lstdc++ -L../../base/lib/ -labase
-LOCAL_C_INCLUDES := . . ../../base/include ../../src/lib
+LOCAL_C_INCLUDES := . ../../base/include ../../src/lib
 
 include $(BUILD_SHARED_LIBRARY)
 

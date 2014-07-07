@@ -15,6 +15,8 @@ enum {
 extern "C" {
 #endif
 
+#define MAX_FD_TOTAL 32
+
 int wiki_is_dont_ask();
 int wiki_is_mutil_output();
 int wiki_is_complete();

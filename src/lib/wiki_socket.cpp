@@ -241,3 +241,7 @@ int WikiSocket::ws_http_output_body(int sock, const char *data, int size)
 	return 0;
 }
 
+int WikiSocket::ws_get_server_status()
+{
+	return m_start_flag;
+}

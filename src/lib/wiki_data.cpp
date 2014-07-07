@@ -78,13 +78,14 @@ int WikiData::wd_init(const fw_files_t file, int total)
 
 	m_out_size += 4096;
 
+	if (m_out_size < 2*1024*1024)
+		m_out_size = 2*1024*1024;
+
 	m_tmp = (char *)malloc(m_out_size);
 	m_buf = (char *)malloc(m_out_size);
 
 	if (m_buf == NULL || m_tmp == NULL)
 		return -1;
-
-	//wd_html_start(0);
 
 	return 0;
 }

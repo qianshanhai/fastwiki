@@ -5,7 +5,7 @@
 #define __WIKI_DATA_H
 
 #include <stdio.h>
-#include "wiki_config.h"
+#include "wiki_common.h"
 
 /*
  * data file struct
