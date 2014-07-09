@@ -49,6 +49,7 @@ class WikiImage {
 	private:
 		int m_fd[_MAX_IMAGE_FILE_TOTAL];
 		SHash *m_hash;
+		SHash *m_fd_hash;
 		pthread_mutex_t m_mutex;
 		int m_init_flag;
 
@@ -86,6 +87,10 @@ class WikiImage {
 		int we_reset(int pthread_idx, const char *fname, int *size);
 		int we_read_next(int pthread_idx, char *data, int *len);
 		int we_pread(int fd, void *data, int len, unsigned int pos);
+
+		/* for test */
+		int we_fd_reset();
+		int we_fd_read_next(void *key, void *value);
 };
 
 #endif

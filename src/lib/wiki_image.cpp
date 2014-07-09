@@ -12,6 +12,8 @@
 
 WikiImage::WikiImage()
 {
+	m_hash = NULL;
+	m_fd_hash = NULL;
 	m_init_flag = -1;
 
 	for (int i = 0; i < _MAX_IMAGE_FILE_TOTAL; i++)
@@ -24,6 +26,9 @@ WikiImage::~WikiImage()
 {
 	if (m_hash)
 		delete m_hash;
+
+	if (m_fd_hash)
+		delete m_fd_hash;
 
 	for (int i = 0; i < _MAX_IMAGE_FILE_TOTAL; i++) {
 		if (m_fd[i] >= 0)
@@ -57,8 +62,8 @@ int WikiImage::we_init(const fw_files_t file, int total)
 				printf("error1:%d, i = %d\n", head.hash_size, i);
 				return -1;
 			}
-			m_hash = new SHash();
-			m_hash->sh_fd_init_ro(fd, sizeof(head) + head.data_size);
+			m_fd_hash = new SHash();
+			m_fd_hash->sh_fd_init_ro(fd, sizeof(head) + head.data_size);
 			flag = 1;
 		}
 	}
@@ -87,6 +92,16 @@ int WikiImage::we_init(const fw_files_t file, int total)
 	return 0;
 }
 
+int WikiImage::we_fd_reset()
+{
+	return m_fd_hash->sh_fd_reset();
+}
+
+int WikiImage::we_fd_read_next(void *key, void *value)
+{
+	return m_fd_hash->sh_fd_read_next(key, value);
+}
+
 int WikiImage::we_reset(int pthread_idx, const char *fname, int *size)
 {
 	int n;
@@ -104,7 +119,7 @@ int WikiImage::we_reset(int pthread_idx, const char *fname, int *size)
 
 	pthread_mutex_lock(&m_mutex);
 
-	if ((n = m_hash->sh_fd_find(&key, f)) == _SHASH_FOUND) {
+	if ((n = m_fd_hash->sh_fd_find(&key, f)) == _SHASH_FOUND) {
 		m_file_pos[pthread_idx] = 0;
 		*size = f->data_len;
 	}
@@ -242,7 +257,7 @@ int WikiImage::we_new_file()
 	m_curr_file_idx++;
 	we_get_file_name(file, m_curr_file_idx);
 
-	if ((m_curr_fd = open(file, O_RDWR | O_TRUNC |  O_CREAT, 0644)) == -1)
+	if ((m_curr_fd = open(file, O_RDWR | O_TRUNC | O_CREAT | O_BINARY, 0644)) == -1)
 		return -1;
 
 	memset(&m_head, 0, sizeof(m_head));
@@ -281,7 +296,7 @@ int WikiImage::we_write_hash()
 
 	we_get_file_name(file, 0);
 
-	if ((fd = open(file, O_RDWR, 0644)) == -1) {
+	if ((fd = open(file, O_RDWR | O_BINARY, 0644)) == -1) {
 		perror(file);
 		return -1;
 	}
