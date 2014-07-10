@@ -3,14 +3,23 @@
 
 int main(int argc, char *argv[])
 {
-	struct file_st files;
+	int total;
+	char default_lang[64];
+	struct file_st *f, *files;
+
+	if (argc < 2) {
+		printf("usage: %s <fname>\n", argv[0]);
+		return 0;
+	}
 
 	WikiConfig *config = new WikiConfig();
 	config->wc_init(".");
-	//config->wc_get_file(&files);
+
+	config->wc_get_lang_list(default_lang, &files, &total);
+	f = &files[0];
 
 	WikiImage *image = new WikiImage();
-	image->we_init(files.image_file, files.image_total);
+	image->we_init(f->image_file, f->image_total);
 
 	char *buf = (char *)malloc(1024*1024);
 	int size, len;
@@ -25,4 +34,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-

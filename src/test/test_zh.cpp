@@ -10,12 +10,12 @@ int main(int argc, char *argv[])
 {
 	mapfile_t mt;
 
-	if (argc < 3) {
-		printf("usage: %s <zh2hans.txt> <input>\n", argv[0]);
+	if (argc < 2) {
+		printf("usage: %s <input>\n", argv[0]);
 		return 0;
 	}
 
-	q_mmap(argv[2], &mt);
+	q_mmap(argv[1], &mt);
 
 	WikiZh *zh = new WikiZh();
 	zh->wz_init();
