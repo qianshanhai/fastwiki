@@ -457,6 +457,11 @@ struct __month_day {
 
 char *get_month_day(char *key)
 {
+	return get_month_day_from_lang(key, _lang);
+}
+
+char *get_month_day_from_lang(char *key, const char *lang)
+{
 	time_t now;
 	struct tm *tm;
 
@@ -466,7 +471,7 @@ char *get_month_day(char *key)
 	key[0] = 0;
 
 	for (int i = 0; all_month_day[i].l; i++) {
-		if (strcasecmp(all_month_day[i].l, _lang) == 0)
+		if (strcasecmp(all_month_day[i].l, lang) == 0)
 			return all_month_day[i].func(key, tm->tm_mon, tm->tm_mday);
 	}
 

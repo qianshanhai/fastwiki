@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	>  
+	<item  
+		android:id="@+id/library_menu_ok"
+		android:showAsAction="ifRoom"  
+		android:title="OK">
+	</item>  
+	<item  
+		android:id="@+id/library_menu_all"
+		android:showAsAction="ifRoom"
+		android:title="Select All">  
+	</item>  
+	<item  
+		android:id="@+id/library_menu_scan_sdcard"
+		android:showAsAction="ifRoom"
+		android:title="Scan">  
+	</item>  
+</menu>

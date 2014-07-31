@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+	<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf8">
+	<meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+	<meta http-equiv="PRAGMA" content="NO-CACHE"> 
+
+	<style type="text/css">
+		sup.reference {unicode-bidi:"-moz-isolate";unicode-bidi:"-webkit-isolate";unicode-bidi:"isolate"}
+		ol.references > li:target,sup.reference:target,cite:target{background-color:#DEF}sup.reference{font-weight:normal;font-style:normal}
+		sup.reference a{white-space:nowrap}
+		table.navbox{border:1px solid #aaa;width:100%%;margin:auto;clear:both;font-size:88%%;text-align:center;padding:1px}
+		table.navbox + table.navbox{margin-top:-1px}
+		.navbox-title,.navbox-abovebelow,table.navbox th{text-align:center;padding-left:1em;padding-right:1em}
+		.navbox-group{white-space:nowrap;text-align:right;font-weight:bold;padding-left:1em;padding-right:1em}
+		.navbox,.navbox-subgroup{background:#fdfdfd}
+		.navbox-list{border-color:#fdfdfd}
+		.navbox-title,table.navbox th{background:#ccccff}
+		.navbox-abovebelow,.navbox-group,.navbox-subgroup .navbox-title{background:#ddddff}
+		.navbox-subgroup .navbox-group,.navbox-subgroup .navbox-abovebelow{background:#e6e6ff}
+		.navbox-even{background:#f7f7f7}
+		.navbox-odd{background:transparent}
+		.collapseButton{float:right;font-weight:normal;text-align:right;width:auto}
+		.navbox .collapseButton{width:6em}
+		div.thumbinner{border:1px solid #cccccc;padding:3px !important;background-color:White;font-size:94%%;text-align:center;overflow:hidden}
+
+		body {
+			background:%s;
+			color:%s;
+			font-size:%dpt;
+		}
+		ul {
+			margin-top:0px;
+			margin-left:10px;
+			padding:6px;
+		}
+		ol {
+			margin-top:0px;
+			margin-left:26px;
+			padding:6px;
+		}
+		img {
+			height:auto;
+			width:auto;
+		}
+		a {
+			color:%s
+		}
+		a:link {
+			text-decoration: none;
+		}
+		a:visited {
+			text-decoration: none;
+		}
+		a:hover {
+			text-decoration: none;
+		}
+	</style>
+	<script language=javascript>
+		function set_font_size(n)
+		{
+			if (n > 3) {
+				document.body.style.fontSize = n + "pt";
+			}
+		}
+
+	function $(x) { return document.getElementById(x); }
+
+	function http_get(s)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open( "GET", "http://127.0.0.1:%d/" + s, false);
+		xmlHttp.send(null);
+		return xmlHttp.responseText;
+	}
+
+	function last_pos()
+	{
+		var x = %d;
+		var o_h = %d;
+		var h = document.body.scrollHeight;
+
+		if (x > 20) {
+			document.body.scrollTop=(x *h /o_h);
+		}
+	}
+
+	function goto_top(last_pos, last_height)
+	{
+		var x = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;
+		var h = document.body.scrollHeight;
+
+		if (x == 0) {
+			document.body.scrollTop = last_pos * last_height / h;
+		} else {
+			document.body.scrollTop = 0;
+		}
+	}
+
+	function set_pos()
+	{
+		var x = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;
+
+		android.real_set_pos(x, document.body.scrollHeight, document.documentElement.clientHeight);
+	}
+
+	function get_data()
+	{
+		var id;
+		var m = %d;
+
+		for (var i = 0; i < m; i++) {
+			id = "main" + i;
+			$(id).innerHTML = http_get("curr:" + i);
+		}
+		last_pos();
+	}
+
+	function next_page()
+	{
+		var x = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;
+		var y = document.body.scrollTop + document.documentElement.clientHeight - 20;
+
+		document.body.scrollTop = y > 0 ? y : 0;
+
+		if (document.body.scrollTop + document.documentElement.clientHeight >= document.body.scrollHeight) {
+			android.has_last_page();
+		}
+
+		android.real_set_pos(y, document.body.scrollHeight, document.documentElement.clientHeight);
+	}
+
+	function back_page()
+	{
+		var x = window.pageYOffset||document.documentElement.scrollTop||document.body.scrollTop; 
+		var y = document.body.scrollTop - window.screen.availHeight + 20;
+		document.body.scrollTop = y > 0 ? y : 0;
+		android.real_set_pos(y, document.body.scrollHeight, window.screen.availHeight);
+	}
+</script>
+</head>
+
+<body>
+
+SPLIT
+
+<div id=main0></div>
+<div id=main1></div>
+<div id=main2></div>
+<div id=main3></div>
+<div id=main4></div>
+<div id=main5></div>
+<div id=main6></div>
+<div id=main7></div>
+<div id=main8></div>
+<div id=main9></div>
+<div id=main10></div>
+<div id=main11></div>
+<div id=main12></div>
+<div id=main13></div>
+<div id=main14></div>
+<div id=main15></div>
+<div id=main16></div>
+<div id=main17></div>
+<div id=main18></div>
+<div id=main19></div>
+<div id=main20></div>
+
+<script language=javascript>
+	var timeOutEvent=0;
+	function gtouchstart(v){  
+		timeOutEvent = setTimeout("longPress(\"" + v + "\")", 500);
+		return false;  
+	}  
+	function gtouchend(){  
+		clearTimeout(timeOutEvent);
+		if(timeOutEvent!=0){  
+		}  
+		return false;  
+	}  
+	function gtouchmove(){  
+		clearTimeout(timeOutEvent);
+		timeOutEvent = 0;  
+	}  
+
+	function longPress(v){  
+		timeOutEvent = 0;  
+		android.translate(v);
+	}  
+
+	var d = document.getElementsByTagName("k");
+
+	for (var i = 0; i < d.length; i++) {
+		d[i].ontouchstart = touchHandler;
+		d[i].ontouchend =  touchHandler;
+		d[i].ontouchmove = touchHandler;
+	}
+
+	function touchHandler(e) {
+		if (e.type == "touchstart") {
+			gtouchstart(e.target.innerHTML);
+		} else if (e.type == "touchmove") {
+			gtouchmove();
+		} else if (e.type == "touchend") {
+			gtouchend();
+		}
+	}
+</script>
+
+</body>
+</html>
+

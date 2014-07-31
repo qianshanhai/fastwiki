@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/history_setting"
+	>  
+	<item
+		android:id="@+id/favorite_set"
+		android:icon="@drawable/ic_setting"
+		android:showAsAction="ifRoom"  
+		android:title="setting"
+		android:titleCondensed="setting">  
+	</item>
+	<item
+		android:id="@+id/favorite_delete"
+		android:icon="@drawable/ic_delete"
+		android:showAsAction="ifRoom"
+		android:title="delete"  
+		android:titleCondensed="delete">  
+	</item>
+</menu>

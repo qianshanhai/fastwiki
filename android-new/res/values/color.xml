@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+   <drawable name="darkgray">#808080FF </drawable> 
+   <drawable name="white">#ffffff</drawable>
+   <drawable name="blue">#0000ff</drawable>
+   <drawable name="black">#000000</drawable>
+   <drawable name="listview_selected">#ffffff</drawable>
+</resources>

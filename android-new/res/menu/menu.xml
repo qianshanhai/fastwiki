@@ -1,0 +1,24 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/item1"
+          android:title="hehe1"
+          android:icon="@drawable/ic_history"
+          android:showAsAction="always"/>
+    <group android:id="@+id/group">
+        <item android:id="@+id/group_item1"
+              android:onClick="onGroupItemClick"
+              android:title="group_item1"
+              android:icon="@drawable/ic_history" />
+        <item android:id="@+id/group_item2"
+              android:onClick="onGroupItemClick"
+              android:title="group_item2"
+              android:icon="@drawable/ic_history" />
+    </group>
+    <item android:id="@+id/submenu"
+          android:title="submenu_title"
+          android:showAsAction="always" >
+        <menu>
+            <item android:id="@+id/submenu_item1"
+                  android:title="submenu_item1" />
+        </menu>
+    </item>
+</menu>

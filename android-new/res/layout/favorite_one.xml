@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout  
+	xmlns:android="http://schemas.android.com/apk/res/android"  
+	android:orientation="horizontal"  
+	android:layout_width="fill_parent"  
+	android:layout_height="fill_parent"  
+	>
+
+	<TextView android:id="@+id/favorite_text"
+		android:layout_weight="1"
+		android:layout_width="wrap_content"  
+		android:layout_height="fill_parent"   
+		android:textSize="22dip"
+		>
+	</TextView>
+
+	<TextView android:id="@+id/favorite_rate"
+		android:layout_width="wrap_content"  
+		android:layout_height="fill_parent"   
+		android:textSize="22dip"
+		>
+	</TextView>
+
+	<CheckBox    
+		android:id="@+id/favorite_box"
+		android:layout_width="wrap_content"    
+		android:layout_height="wrap_content"    
+		android:focusable="false"    
+		android:focusableInTouchMode="false"    
+		android:clickable="false" 
+		/>
+</LinearLayout>

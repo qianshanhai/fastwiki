@@ -28,6 +28,7 @@ extern "C" {
 
 const char *local_msg(const char *name);
 char *get_month_day(char *key);
+char *get_month_day_from_lang(char *key, const char *lang);
 
 void set_lang(const char *l);
 char *get_lang();

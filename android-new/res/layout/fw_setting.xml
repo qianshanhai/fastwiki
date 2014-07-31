@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/setting_scroll"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent" >
+	<LinearLayout
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:orientation="vertical"
+		>
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+			<TextView android:id="@+id/language_text"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content"  
+				android:textColor="#ffffff"
+				android:text="language setting"
+				android:textSize="18dip"
+				android:layout_weight="1"
+				/> 
+			<Spinner android:id="@+id/language_sel"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content" />
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+			<TextView android:id="@+id/home_page_text"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content"  
+				android:textColor="#ffffff"
+				android:text="home page"
+				android:textSize="18dip"
+				android:layout_weight="1"
+				/> 
+			<Spinner android:id="@+id/home_page_list"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content" />
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+			<TextView android:id="@+id/full_screen"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"  
+				android:layout_height="fill_parent"   
+				android:textColor="#ffffff"
+				android:background="#000000"
+				android:text="Full Screen"
+				android:textSize="18dip"
+				>
+			</TextView>
+			<CheckBox    
+				android:id="@+id/full_screen_box"
+				android:layout_width="wrap_content"    
+				android:layout_height="wrap_content"    
+				/>
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+		<TextView android:id="@+id/mutil_dict_text"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="mutil dict set"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+			<Spinner android:id="@+id/mutil_dict_list"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content" />
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+			<TextView android:id="@+id/translate_need_text"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"  
+				android:layout_height="fill_parent"   
+				android:textColor="#ffffff"
+				android:background="#000000"
+				android:text="need translate"
+				android:textSize="18dip"
+				>
+			</TextView>
+			<CheckBox    
+				android:id="@+id/translate_box"
+				android:layout_width="wrap_content"    
+				android:layout_height="wrap_content"    
+				/>
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+			<TextView android:id="@+id/translate_show_text"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"  
+				android:layout_height="fill_parent"   
+				android:textColor="#ffffff"
+				android:background="#000000"
+				android:text="translate show lines"
+				android:textSize="18dip"
+				>
+			</TextView>
+			<ImageButton
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content"  
+				android:layout_gravity="center_vertical"
+				android:src="@drawable/ic_nav_back"
+				android:id="@+id/translate_show_line_back"
+				android:scaleType="fitCenter"
+				android:adjustViewBounds="true"
+				android:background="@null"
+				android:layout_alignParentRight="true"
+				android:layout_alignParentTop="true"
+				android:layout_alignParentBottom="true"
+				android:layout_marginRight="10dip"
+				/>
+
+			<TextView android:id="@+id/translate_show_line"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content"   
+				android:textColor="#ffffff"
+				android:background="#000000"
+				android:text="6"
+				android:textSize="18dip"
+				>
+			</TextView>
+
+			<ImageButton
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content"  
+				android:layout_gravity="center_vertical"
+				android:src="@drawable/ic_nav_forward"
+				android:id="@+id/translate_show_line_forward"
+				android:scaleType="fitCenter"
+				android:adjustViewBounds="true"
+				android:background="@null"
+				android:layout_alignParentRight="true"
+				android:layout_alignParentTop="true"
+				android:layout_alignParentBottom="true"
+				android:layout_marginRight="10dip"
+				/>
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/translate_default_text"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="default translate dict"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+			<Spinner android:id="@+id/translate_default_list"
+				android:layout_width="wrap_content"  
+				android:layout_height="wrap_content" />
+		</LinearLayout>
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+	</LinearLayout>
+</ScrollView>

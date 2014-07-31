@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<LinearLayout  
+	xmlns:android="http://schemas.android.com/apk/res/android"  
+	android:orientation="horizontal"  
+	android:layout_width="fill_parent"  
+	android:layout_height="fill_parent"  
+	>
+
+	<TextView android:id="@+id/translate_use_text"
+		android:layout_weight="1"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:textColor="#ffffff"
+		android:text="use "
+		android:textSize="18dip"
+		>
+	</TextView>
+	
+	<Spinner android:id="@+id/translate_use_list"
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content" />
+
+	<TextView android:id="@+id/translate_to_text"
+		android:layout_weight="1"
+		android:layout_width="wrap_content" 
+		android:layout_height="wrap_content"
+		android:textColor="#ffffff"
+		android:text="to "
+		android:textSize="18dip"
+		>
+	</TextView>
+
+	<Spinner android:id="@+id/translate_to_list"
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content" />
+
+	<ImageButton
+		android:layout_width="wrap_content"  
+		android:layout_height="wrap_content"  
+		android:layout_gravity="center_vertical"
+		android:src="@drawable/ic_cancel_holo_dark_48"
+		android:id="@+id/translate_delete"
+		android:scaleType="fitCenter"
+		android:adjustViewBounds="true"
+		android:background="@null"
+		android:layout_alignParentRight="true"
+		android:layout_alignParentTop="true"
+		android:layout_alignParentBottom="true"
+		android:layout_marginRight="10dip"
+		/>
+
+</LinearLayout>

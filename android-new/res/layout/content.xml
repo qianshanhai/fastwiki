@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="wrap_content"
+	android:layout_height="wrap_content"
+	android:background="#000000"
+	>
+
+	<ImageButton android:id="@+id/colormode"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/day_mode"
+		/>
+
+	<ImageButton android:id="@+id/shuffle"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/shuffle"
+		/>
+
+	<ImageButton android:id="@+id/search"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/ic_search"
+		/>
+
+	<ImageButton android:id="@+id/zoom_in"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/ic_zoom_in"
+		/>
+
+	<ImageButton android:id="@+id/zoom_out"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:background="#000000"
+		android:src="@drawable/ic_zoom_out"
+		/>
+
+</LinearLayout>

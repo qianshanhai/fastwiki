@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<resources>  
+	<string-array name="list_entries">  
+		<item>shd</item>  
+		<item>fj</item>  
+		<item>fj</item>  
+		<item>hb</item>  
+	</string-array>  
+	<string-array name="list_entries_value">  
+		<item>shandong1</item>  
+		<item>fujian1</item>  
+		<item>beijing1</item>  
+		<item>hebei1</item>  
+	</string-array>  
+	<string-array name="list_entries_value2">  
+		<item>shandong2</item>  
+		<item>fujian2</item>  
+		<item>beijing2</item>  
+		<item>hebei2</item>  
+	</string-array>  
+</resources>  

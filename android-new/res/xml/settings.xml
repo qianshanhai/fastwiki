@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+		android:title="setting" >
+	>
+	<PreferenceCategory 
+		android:key="basic"
+		android:title="basic_setting">
+
+        <CheckBoxPreference
+			android:key="pref_auto_lookup_clipboard"
+			android:title="pref_title_auto_lookup_clipboard"
+			android:summary="pref_summary_auto_lookup_clipboard"
+			android:defaultValue="pref_default_auto_lookup_clipboard"/>
+	</PreferenceCategory>
+
+	<PreferenceCategory android:title="pref_cate_title_multi_dict">
+		<ListPreference
+			android:key="pref_preferred_tts_engine"
+			android:title="pref_title_tts_engine"
+			android:dialogTitle="pref_title_tts_engine"
+			></ListPreference>
+
+		<ListPreference
+			android:key="engine"
+			android:title="tts_engine"
+			android:entries="@array/list_entries"  
+			android:entryValues="@array/list_entries_value"  
+			android:dialogTitle="dialogTitle"  
+			android:defaultValue="@array/list_entries_value2"  
+			></ListPreference>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="translate"
+		android:key="translate" >
+	</PreferenceCategory>
+</PreferenceScreen>

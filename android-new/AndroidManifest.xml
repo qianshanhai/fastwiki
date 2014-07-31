@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="com.hace.fastwiki"
+      android:versionCode="30"
+      android:versionName="3.0 beta1">
+
+	  <supports-screens
+		  android:xlargeScreens="true"
+		  android:largeScreens="true"
+		  android:normalScreens="true"
+		  android:smallScreens="true"
+		  android:anyDensity="true"
+		  />
+
+	  <uses-sdk android:minSdkVersion="3"
+		  android:targetSdkVersion="16"
+		  />
+
+	<application android:icon="@drawable/icon" android:label="@string/app_name"
+		android:hardwareAccelerated="true">
+		<activity android:configChanges="orientation|keyboardHidden"
+				android:name=".FastWiki"
+				android:label="@string/app_name"
+				android:theme="@style/Theme.Sherlock"
+				android:launchMode="singleTop"
+				android:uiOptions="splitActionBarWhenNarrow"
+				>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".SettingFrame"
+			android:theme="@style/Theme.Sherlock"
+		    android:label="@string/app_name">
+		 </activity>
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".History"
+			android:theme="@style/Theme.Sherlock"
+		    android:label="@string/app_name">
+		 </activity>
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".Favorite"
+			android:theme="@style/Theme.Sherlock"
+		    android:label="@string/app_name">
+		 </activity>
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".FastwikiSetting"
+			android:theme="@style/Theme.Sherlock"
+		    android:label="@string/app_name">
+		 </activity>
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".FastwikiFind"
+			android:theme="@style/Theme.Sherlock"
+		    android:label="@string/app_name">
+		 </activity>
+
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".Library"
+			android:theme="@style/Theme.Sherlock"
+			android:launchMode="singleTop"
+			android:uiOptions="splitActionBarWhenNarrow"
+		    android:label="@string/app_name">
+		 </activity>
+
+		<activity android:configChanges="orientation|keyboardHidden"
+			android:name=".FastWikiAbout"
+			android:theme="@style/Theme.Sherlock"
+		    android:label="@string/app_name">
+		 </activity>
+
+    </application>
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+</manifest>
