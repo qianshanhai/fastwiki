@@ -16,3 +16,6 @@ test_zh: test_zh.o
 
 test_wiki_image: test_wiki_image.o ../fastwiki-httpd/wiki_config.o
 	$(cpp) -o $@ $^ $(libs)
+
+clean:
+	rm -f *.o $(program)

@@ -18,6 +18,13 @@ int dashf(const char *fname)
 	return (stat(fname, &st) == 0 && S_ISREG(st.st_mode));
 }
 
+int dashl(const char *fname)
+{
+	struct stat st;
+
+	return (lstat(fname, &st) == 0 && S_ISLNK(st.st_mode));
+}
+
 off_t file_size(const char *fname)
 {
 	struct stat st;

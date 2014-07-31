@@ -58,9 +58,16 @@ char *page_format(const char *page, int size, int *ret_len, const char *title, i
 	}
 
 	for (i = 0; i < size; i++) {
+		if (page[i] == 0)
+			continue;
+
 		if (page[i] == '\n') {
 			memcpy(m_buf + len, "<br/>\n", 6);
 			len += 6;
+		} else if (page[i] == '<') {
+			m_buf[len++] = '[';
+		} else if (page[i] == '>') {
+			m_buf[len++] = ']';
 		} else {
 			m_buf[len++] = page[i];
 		}

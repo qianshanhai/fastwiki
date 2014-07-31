@@ -57,6 +57,7 @@ inline char *split_value(split_t &p, int i)
 			&& (buf = split_value(p, p.I)); p.I++)
 
 int dashf(const char *fname);
+int dashl(const char *fname);
 int dashd(const char *fname);
 
 off_t file_size(const char *fname);

@@ -42,6 +42,10 @@ int lzma_uncompress(const char *in, int in_len, char *out, int out_len)
 	return ret == LZMA_STREAM_END ? out_len - strm.avail_out : -1;
 }
 
+/*
+ * zim file format: http://www.openzim.org/wiki/ZIM_File_Format
+ */
+
 Zim::Zim()
 {
 }
