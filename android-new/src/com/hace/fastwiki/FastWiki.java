@@ -742,6 +742,7 @@ public class FastWiki extends SherlockFragmentActivity {
 				my_view.loadDataWithBaseURL(base_url, m, "text/html", "utf8", "");
 				set_title(WikiCurrTitle());
 				load_js = true;
+				change_to_webview();
 			}
 		} else if (requestCode == 102) {
 			int pos = bundle.getInt("favorite_pos");
@@ -753,6 +754,7 @@ public class FastWiki extends SherlockFragmentActivity {
 				my_view.loadDataWithBaseURL(base_url, m, "text/html", "utf8", "");
 				set_title(WikiCurrTitle());
 				load_js = true;
+				change_to_webview();
 			}
 		}
 	}
