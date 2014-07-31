@@ -7,10 +7,45 @@
 
 FastwikiDict *m_dict;
 
-int add_one_file_title(FastwikiDict *dict, const char *file)
+static char *text_trim(char *p)
+{
+	int len;
+	trim(p);
+
+	len = strlen(p);
+
+	if (p[0] == p[len - 1] && (p[0] == '\'' || p[0] == '"')) {
+		p[len - 1] = 0;
+		p++;
+	}
+
+	return p;
+}
+
+static int parse_title_redirect(const char *str, char *title, char *redirect)
+{
+	char *p, tmp[1024];
+
+	title[0] = redirect[0] = 0;
+
+	strcpy(tmp, str);
+
+	if ((p = strstr(tmp, "->"))) {
+		*p = 0;
+		p += 2;
+		strcpy(title, text_trim(tmp));
+		strcpy(redirect, text_trim(p));
+	} else {
+		strcpy(title, text_trim(tmp));
+	}
+	
+	return 0;
+}
+
+static int add_one_file_title(FastwikiDict *dict, const char *file)
 {
 	int n;
-	char tmp[4096];
+	char tmp[4096], title[256], redirect[256];
 
 	FileIO *file_io = new FileIO();
 
@@ -19,7 +54,8 @@ int add_one_file_title(FastwikiDict *dict, const char *file)
 	while ((n = file_io->fi_gets(tmp, sizeof(tmp))) > 0) {
 		if (strncmp(tmp, "#title:", 7) == 0) {
 			chomp(tmp);
-			dict->dict_add_title(tmp + 7, n - 7 - 1);
+			parse_title_redirect(tmp + 7, title, redirect);
+			dict->dict_add_title(title, strlen(title));
 		}
 	}
 	delete file_io;
@@ -27,10 +63,10 @@ int add_one_file_title(FastwikiDict *dict, const char *file)
 	return 0;
 }
 
-int add_one_file_page(FastwikiDict *dict, const char *file)
+static int add_one_file_page(FastwikiDict *dict, const char *file)
 {
-	int n, page_len = 0;
-	char tmp[4096], *page, curr_title[256];
+	int n, page_len = 0, redirect_len = 0;;
+	char tmp[4096], *page, curr_title[256], curr_redirect[256];
 
 	FileIO *file_io = new FileIO();
 
@@ -40,19 +76,20 @@ int add_one_file_page(FastwikiDict *dict, const char *file)
 
 	while ((n = file_io->fi_gets(tmp, sizeof(tmp))) > 0) {
 		if (strncmp(tmp, "#title:", 7) == 0) {
-			if (page_len > 0) {
-				dict->dict_add_page(page, page_len, curr_title, strlen(curr_title));
+			if (page_len > 0 || redirect_len > 0) {
+				dict->dict_add_page(page, page_len, curr_title, strlen(curr_title), curr_redirect, redirect_len);
 				page_len = 0;
 			}
 			chomp(tmp);
-			strcpy(curr_title, tmp + 7);
+			parse_title_redirect(tmp + 7, curr_title, curr_redirect);
+			redirect_len = strlen(curr_redirect);
 		} else {
 			memcpy(page + page_len, tmp, n);
 			page_len += n;
 		}
 	}
-	if (page_len > 0) {
-		dict->dict_add_page(page, page_len, curr_title, strlen(curr_title));
+	if (page_len > 0 || redirect_len > 0) {
+		dict->dict_add_page(page, page_len, curr_title, strlen(curr_title), curr_redirect, redirect_len);
 	}
 	delete file_io;
 
@@ -61,9 +98,9 @@ int add_one_file_page(FastwikiDict *dict, const char *file)
 	return 0;
 }
 
-int show_usage(const char *name)
+static int show_usage(const char *name)
 {
-	printf("Version: 1.0\n");
+	printf("Version: %s, %s\n", _VERSION, __DATE__);
 	printf("Author: qianshanhai\n");
 	printf("Usage: fastwiki-text <name> <date> <files ...>\n");
 
