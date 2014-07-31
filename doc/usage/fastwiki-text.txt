@@ -1,0 +1,37 @@
+fastwiki-text used to create fastwiki data from text file,
+the text file format is:
+
+#title:TITLE
+CONTENT
+
+first line is title, the TITLE is begin with the key "#title:",
+flow lines is content, end with next "#title:", so, is have many TITLE,
+the format is:
+
+#title:TITLE1
+CONTENT1
+#title:TITLE2
+CONTENT2
+
+Note: the CONTENT can include many lines.
+
+The TITLE format is: 
+1. comment string
+
+  example:
+    a. #title:hello
+    b. #title: hello
+
+    The before TITLE space and end TITLE space is ignore.
+    If you want to and space to before or end, use quota:
+       #title: " hello"
+
+2. include redirect, use "->" flag:
+
+  example:
+    a. #title: hello->hi
+
+       This is mean the "hi" is one record, and "hello" point to "hi"
+
+    b. #title: "hello" -> "hi"
+       same as above.
