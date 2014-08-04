@@ -34,6 +34,7 @@ class WikiFavorite {
 		int wf_delete_all();
 		int wf_begin();
 		int wf_next(struct fav_key **p, struct fav_value *ret_value);
+		int wf_random(struct fav_key *key, struct fav_value *value);
 };
 
 #endif

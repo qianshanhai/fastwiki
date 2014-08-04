@@ -181,8 +181,6 @@ public class FastWiki extends SherlockFragmentActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState); 
 
-		//this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-
 		setContentView(R.layout.main);  
 
 		m_ab = getSupportActionBar();
@@ -456,16 +454,19 @@ public class FastWiki extends SherlockFragmentActivity {
 		getSupportMenuInflater().inflate(R.menu.fw_menu, menu);
 		this.m_menu = menu;
 
+		menu.findItem(R.id.ic_view).setTitle(N("FW_MENU_VIEW_OPTION"));
+		menu.findItem(R.id.library).setTitle(N("FW_MENU_LIBRARY"));
+		menu.findItem(R.id.favorites).setTitle(N("FW_MENU_FAVORITE"));
+		menu.findItem(R.id.history).setTitle(N("FW_MENU_HISTORY"));
+		menu.findItem(R.id.setting).setTitle(N("FW_MENU_SETTING"));
 		menu.findItem(R.id.about).setTitle(N("FW_MENU_ABOUT"));
-		menu.findItem(R.id.help).setTitle(N("FW_MENU_HELP"));
 		menu.findItem(R.id.quit).setTitle(N("FW_MENU_EXIT"));
+
 		menu.findItem(R.id.display_top).setTitle(N("FW_MENU_TOP"));
 		menu.findItem(R.id.forward).setTitle(N("FW_MENU_FORWARD"));
-		menu.findItem(R.id.back).setTitle(N("FW_MENU_BACK"));
 		menu.findItem(R.id.zoom_in).setTitle(N("FW_MENU_ZOOM_IN"));
 		menu.findItem(R.id.zoom_out).setTitle(N("FW_MENU_ZOOM_OUT"));
 		menu.findItem(R.id.shuffle).setTitle(N("FW_MENU_RANDOM"));
-		menu.findItem(R.id.read_mode).setTitle(N("FW_MENU_READ_MODE"));
 		menu.findItem(R.id.day_mode).setTitle(N("FW_MENU_DAY_MODE"));
 		menu.findItem(R.id.night_mode).setTitle(N("FW_MENU_NIGHT_MODE"));
 		menu.findItem(R.id.add_to_fav).setTitle(N("FW_MENU_ADD_TO_FAV"));
@@ -473,40 +474,27 @@ public class FastWiki extends SherlockFragmentActivity {
 		return super.onCreateOptionsMenu(menu);
 	}
 
-	/*
-	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-		//menu.findItem(R.id.add_to_fav).setCheckable(false);
-		return super.onPrepareOptionsMenu(menu);
-	}
-	*/
-
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
 		if (m_list_view_flag) {
-			if (id == R.id.zoom_in || id == R.id.zoom_out || id == R.id.shuffle
-					|| id == R.id.display_top || id == R.id.add_to_fav) {
-				return true;
+			if (id == R.id.zoom_in
+					|| id == R.id.zoom_out
+					|| id == R.id.shuffle
+					|| id == R.id.display_top
+					|| id == R.id.add_to_fav
+					|| id == R.id.forward) {
+				return false;
 			}
 		}
-		switch (item.getItemId()) {
+		switch (id) {
 			case R.id.library:
 				startIntentForClass(1, Library.class);
 				return true;
 			case R.id.setting:
-				//startIntentForClass(0, SettingFrame.class);
 				startIntentForClass(0, FastwikiSetting.class);
 				return true;
 			case R.id.history:
-				/*
-				if (add_fav_flag == 0) {
-					m_menu.findItem(R.id.add_to_fav).setIcon(R.drawable.ic_add_to_fav_disable);
-				} else {
-					m_menu.findItem(R.id.add_to_fav).setIcon(R.drawable.ic_add_to_fav);
-				}
-				add_fav_flag = (add_fav_flag == 0) ? 1 : 0;
-				*/
 				startIntentForClass(99, History.class);
 				return true;
 			case R.id.favorites:
@@ -563,6 +551,25 @@ public class FastWiki extends SherlockFragmentActivity {
 				}
 				break;
 
+			case R.id.forward:
+				String [] t = WikiForward();
+				if (t[1].equals(""))
+					break;
+				else if (t[1].equals("1")) {
+					show_short_msg(N("LAST_PAGE"));
+					break;
+				}
+				if (t[0].equals("1")) {
+					change_to_webview();
+					my_view.loadDataWithBaseURL(base_url, t[1], "text/html", "utf8", "");
+					set_title(WikiCurrTitle());
+					load_js = true;
+				} else {
+					set_title(t[1]);
+					on_change();
+				}
+				break;
+
 			default:
 				return super.onOptionsItemSelected(item);
 		}
@@ -601,16 +608,14 @@ public class FastWiki extends SherlockFragmentActivity {
 				return true;
 			}
 			if (t[0].equals("1")) {
+				change_to_webview();
 				my_view.loadDataWithBaseURL(base_url, t[1], "text/html", "utf8", "");
-				// TODO 
 				set_title(WikiCurrTitle());
 				load_js = true;
-				//set_bookmark_icon();
-			}/* else {
+			} else {
 				set_title(t[1]);
 				on_change();
 			}
-			*/
 			return true;
 		}
 		return super.onKeyDown(keyCode, event);

@@ -380,7 +380,7 @@ int WikiIndex::wi_output(const char *outfile)
 	int *href_idx = (int *)calloc(m_idx_total, sizeof(int));
 
 	if (href_idx == NULL) {
-		printf("No enough memory.\n");
+		printf("No enough memory: m_idx_total=%d\n", m_idx_total);
 		return -1;
 	}
 
@@ -420,12 +420,7 @@ int WikiIndex::wi_write_index_file(const char *outfile, const wi_head_t *h, cons
 			sort_idx_t *sort_idx, const char *key_string, const char *store, const char *hash)
 {
 
-	int fd, flag;
-#ifdef __linux__
-	flag = O_CREAT | O_TRUNC | O_RDWR | O_APPEND;
-#else
-	flag = O_CREAT | O_TRUNC | O_RDWR | O_APPEND | O_BINARY;
-#endif
+	int fd, flag = O_CREAT | O_TRUNC | O_RDWR | O_APPEND | O_BINARY;
 
 	if ((fd = open(outfile, flag, 0644)) == -1)
 		return -1;
@@ -510,7 +505,7 @@ int WikiIndex::wi_create_vhash(sort_idx_t *sort_idx, int total, char *key_string
 	T = new SHash();
 	T->sh_set_hash_magic(get_max_prime(50*10000));
 	if (T->sh_init(25*10000, sizeof(struct key_store), sizeof(v)) == -1) {
-		printf("No enough memory.\n");
+		printf("No enough memory: %d\n", __LINE__);
 		return -1;
 	}
 
@@ -542,7 +537,7 @@ int WikiIndex::wi_create_vhash(sort_idx_t *sort_idx, int total, char *key_string
 	int store_pos = 0;
 	char *store = (char *)malloc(size + 10*1024*1024);
 	if (store == NULL) {
-		printf("No enough memory.\n");
+		printf("No enough memory: size=%d\n", size);
 		return -1;
 	}
 
@@ -550,8 +545,8 @@ int WikiIndex::wi_create_vhash(sort_idx_t *sort_idx, int total, char *key_string
 
 	m_hash = new SHash();
 	m_hash->sh_set_hash_magic(get_max_prime(*key_total + 20*10000));
-	if (m_hash->sh_init(*key_total, sizeof(struct key_store), sizeof(struct hash_v)) == -1) {
-		printf("No enough memory.\n");
+	if (m_hash->sh_init(*key_total + 10, sizeof(struct key_store), sizeof(struct hash_v)) == -1) {
+		printf("No enough memory: %d\n", __LINE__);
 		return -1;
 	}
 
@@ -723,12 +718,6 @@ int WikiIndex::wi_init(const char *file)
 	if (m_tmp_idx == NULL) {
 		return -1;
 	}
-
-#ifdef __linux__
-	struct timeval now;
-	gettimeofday(&now, NULL);
-	srand(now.tv_sec | now.tv_usec);
-#endif
 
 	return 0;
 }

@@ -49,6 +49,7 @@ public class FastWikiAbout extends SherlockActivity {
 		m_text.setText(N("FW_ABOUT_TITLE"));
 
 		my_view = (WebView)findViewById(R.id.about_wv);  
+		my_view.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
 
 		websettings = my_view.getSettings();  
 

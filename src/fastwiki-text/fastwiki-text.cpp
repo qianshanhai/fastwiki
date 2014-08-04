@@ -52,7 +52,7 @@ static int add_one_file_title(FastwikiDict *dict, const char *file)
 	file_io->fi_init(file);
 
 	while ((n = file_io->fi_gets(tmp, sizeof(tmp))) > 0) {
-		if (strncmp(tmp, "#title:", 7) == 0) {
+		if (strncasecmp(tmp, "#title:", 7) == 0) {
 			chomp(tmp);
 			parse_title_redirect(tmp + 7, title, redirect);
 			dict->dict_add_title(title, strlen(title));
@@ -75,7 +75,7 @@ static int add_one_file_page(FastwikiDict *dict, const char *file)
 	page = (char *)malloc(5*1024*1024);
 
 	while ((n = file_io->fi_gets(tmp, sizeof(tmp))) > 0) {
-		if (strncmp(tmp, "#title:", 7) == 0) {
+		if (strncasecmp(tmp, "#title:", 7) == 0) {
 			if (page_len > 0 || redirect_len > 0) {
 				dict->dict_add_page(page, page_len, curr_title, strlen(curr_title), curr_redirect, redirect_len);
 				page_len = 0;

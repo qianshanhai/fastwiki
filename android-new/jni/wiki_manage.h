@@ -152,7 +152,13 @@ class WikiManage {
 		int wiki_match_total();
 		int wiki_match_lang(wiki_title_t **buf, int *total, int *flag);
 
+		int wiki_random_history(char **buf, int *size);
+		int wiki_random_favorite(char **buf, int *size);
+		int wiki_random_select_lang(char **buf, int *size);
+		int wiki_random_all_lang(char **buf, int *size);
 		int wiki_random_page(char **buf, int *size);
+
+		int wiki_curr_date_home_page(char **buf, int *size);
 		int wiki_index_msg(char **buf, int *size);
 		int wiki_add_key_pos(int pos, int height, int screen_height);
 		int wiki_find_key_pos(int *pos, int *height);
@@ -178,6 +184,7 @@ class WikiManage {
 		int wiki_find_key(const char *key, char **buf, int *size);
 		int wiki_parse_url_local(const char *url, char *flag, char *ret_title, char **data);
 		int wiki_parse_url(const char *url, char *flag, char *title, char **data);
+		int wiki_parse_url_lang(const char *url, char *flag, char *title, char **data);
 
 		char *wiki_curr_title();
 
@@ -228,6 +235,9 @@ class WikiManage {
 
 		int wiki_get_home_page_flag();
 		int wiki_set_home_page_flag(int idx);
+
+		int wiki_set_random_flag(int idx);
+		int wiki_get_random_flag();
 
 		int wiki_get_need_translate();
 		int wiki_set_need_translate(int idx);

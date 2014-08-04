@@ -88,6 +88,7 @@ public class FastwikiSetting extends SherlockActivity {
 		set_one_text(R.id.translate_show_text, "FW_TRANS_SHOW_LINES");
 		set_one_text(R.id.translate_default_text, "FW_DEFAULT_TRANS_DICT");
 		set_one_text(R.id.full_screen, "FW_FULL_SCREEN");
+		set_one_text(R.id.random_text, "FW_RANDOM_ARTICLE");
 
 		String [] m = {
 			N("FW_SEL_ENGLISH"),
@@ -106,14 +107,27 @@ public class FastwikiSetting extends SherlockActivity {
 		String [] home_page_desc = {
 			N("FW_HP_BLANK"),
 			N("FW_HP_LAST_READ"),
-			N("FW_HP_CURR_DATE"),
-			"history random",
-			"favorite random"
+			N("FW_HP_CURR_DATE")
 		};
 		Spinner home_page = new_spinner(R.id.home_page_list, home_page_desc, GetHomePageFlag()); 
 		home_page.setOnItemSelectedListener(new OnItemSelectedListener() {
 			public void onItemSelected(AdapterView<?> arg0, View arg1, int idx, long arg3) {  
 				SetHomePageFlag(idx);
+			}  
+			public void onNothingSelected(AdapterView<?> arg0) {  
+			}  
+		}); 
+
+		String [] random_desc = {
+			N("FW_RANDOM_HISTORY"),
+			N("FW_RANDOM_FAVORITE"),
+			N("FW_RANDOM_SELECTED_LANG"),
+			N("FW_RANDOM_ALL_LANG")
+		};
+		Spinner random = new_spinner(R.id.random_list, random_desc, GetRandomFlag()); 
+		random.setOnItemSelectedListener(new OnItemSelectedListener() {
+			public void onItemSelected(AdapterView<?> arg0, View arg1, int idx, long arg3) {  
+				SetRandomFlag(idx);
 			}  
 			public void onNothingSelected(AdapterView<?> arg0) {  
 			}  
@@ -158,6 +172,11 @@ public class FastwikiSetting extends SherlockActivity {
 			}
 		}
 
+		if (m_lang_list.length == 0) {
+			m_lang_list = new String[1];
+			m_lang_list[0] = "No Dictionary";
+		}
+
 		Spinner trans_default = new_spinner(R.id.translate_default_list, m_lang_list, default_pos);
 		trans_default.setOnItemSelectedListener(new OnItemSelectedListener() {
 			public void onItemSelected(AdapterView<?> arg0, View arg1, int idx, long arg3) {  
@@ -179,6 +198,7 @@ public class FastwikiSetting extends SherlockActivity {
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) { 
 				if (isChecked) {
 					SetNeedTranslate(1);
+					show_short_msg(N("FW_TRANS_ALERT_MSG"));
 				} else {
 					SetNeedTranslate(0);
 				}
@@ -270,7 +290,7 @@ public class FastwikiSetting extends SherlockActivity {
 
 	private void show_short_msg(String msg)
 	{
-		Toast toast = Toast.makeText(FastwikiSetting.this, msg, Toast.LENGTH_SHORT); 
+		Toast toast = Toast.makeText(FastwikiSetting.this, msg, Toast.LENGTH_LONG); 
 		toast.show();
 	}
 
@@ -285,6 +305,9 @@ public class FastwikiSetting extends SherlockActivity {
 
 	public native int GetHomePageFlag();
 	public native int SetHomePageFlag(int idx);
+
+	public native int GetRandomFlag();
+	public native int SetRandomFlag(int idx);
 
 	public native int GetNeedTranslate();
 	public native int SetNeedTranslate(int f);

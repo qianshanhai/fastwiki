@@ -20,9 +20,8 @@
 #define WK_IMAGE_PREFIX "fastwiki.image."
 
 #define LOG_FILE BASE_DIR "/" "fastwiki.log"
-#define CFG_FILE "fastwiki2.cfg"
 
-#define CFG_NEW_FILE "fastwiki2.cfg"
+#define CFG_NEW_FILE "fastwiki3.cfg"
 
 #define FW_VIEW_SIZE_G  (1024*1024*1024)
 
@@ -71,6 +70,7 @@ typedef struct {
 
 #define MAX_COLOR_TOTAL 8
 #define MAX_FD_TOTAL 32
+#define MAX_TMP_DIR_TOTAL 128
 #define MAX_FW_DIR_TOTAL 10
 #define MAX_FW_DIR_LEN   80
 #define MAX_SELECT_LANG_TOTAL 30
@@ -79,8 +79,13 @@ enum {
 	HOME_PAGE_BLANK = 0,
 	HOME_PAGE_LAST_READ,
 	HOME_PAGE_CURR_DATE,
-	HOME_PAGE_HISTORY_RANDOM,
-	HOME_PAGE_FAVORITE_RANDOM,
+};
+
+enum {
+	RANDOM_HISTORY = 0,
+	RANDOM_FAVORITE,
+	RANDOM_SELECT_LANG,
+	RANDOM_ALL_LANG,
 };
 
 typedef struct {
@@ -96,7 +101,8 @@ typedef struct {
 	unsigned int view_size_byte; /* with byte */
 	unsigned int view_total; 
 	unsigned int home_page; /* HOME_PAGE_ */
-	char r1[44];
+	unsigned int random_flag; /* RANDOM_ */
+	char r1[40];
 	int hide_menu_flag; /* =1 hide, =0 show */
 	int color_index; /* 0 = */
 	int color_total;
@@ -142,6 +148,8 @@ struct file_st {
 
 #define MAX_LANG_TOTAL 128
 
+typedef char tmp_dir_t[MAX_TMP_DIR_TOTAL][MAX_FW_DIR_LEN];
+
 class WikiConfig;
 
 class WikiConfig {
@@ -154,7 +162,7 @@ class WikiConfig {
 		struct file_st m_file[MAX_LANG_TOTAL];
 		int m_file_total;
 
-		char m_tmp_dir[25][MAX_FW_DIR_LEN];
+		tmp_dir_t m_tmp_dir;
 		int m_tmp_dir_total;
 
 	public:
@@ -215,10 +223,16 @@ class WikiConfig {
 		int wc_get_translate_default(char *lang);
 		int wc_set_translate_default(const char *lang);
 
+		int wc_merge_tmp_dir_first(int flag, tmp_dir_t tmp, int tmp_total, tmp_dir_t to, int *to_total,
+					int (*cmp)(const char *a, const char *b, int len, char *buf));
+		int wc_merge_tmp_dir();
 		int wc_clean_tmp_dir();
 		int wc_add_tmp_dir(const char *dir);
 		int wc_scan_all();
 		int wc_scan_sdcard(const char *dir, int flag);
+
+		int wc_get_random_flag();
+		int wc_set_random_flag(int mode);
 
 	private:
 		int wc_init_config(const char *file);

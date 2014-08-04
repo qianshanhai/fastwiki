@@ -146,7 +146,7 @@ const cache_t *WikiHistory::wh_back_cache()
 
 const cache_t *WikiHistory::wh_forward_cache()
 {
-	if (m_curr->next == NULL)
+	if (m_curr == NULL || m_curr->next == NULL)
 		return NULL;
 
 	m_curr = m_curr->next;
@@ -261,4 +261,9 @@ int WikiHistory::wh_get_last_record(history_key_t *last_key, history_value_t *la
 	memcpy(last_value, &m_head->last_value, sizeof(*last_value));
 
 	return 0;
+}
+
+int WikiHistory::wh_random(history_key_t *key, history_value_t *value)
+{
+	return m_hash->sh_random(key, value);
 }

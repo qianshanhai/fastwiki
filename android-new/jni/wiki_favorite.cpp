@@ -109,3 +109,8 @@ int WikiFavorite::wf_next(struct fav_key **p, struct fav_value *ret_value)
 
 	return 0;
 }
+
+int WikiFavorite::wf_random(struct fav_key *key, struct fav_value *value)
+{
+	return m_hash->sh_random(key, value);
+}

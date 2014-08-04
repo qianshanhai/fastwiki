@@ -163,7 +163,9 @@ int WikiManage::wiki_add_lang(struct one_lang *p, const struct file_st *f)
 	p->image = new WikiImage();
 
 	if (p->data->wd_init(f->data_file, f->data_total) == -1) {
-		LOG("Not found data file: fastwiki.dat.*\n");
+		for (int i = 0; i < f->data_total; i++) {
+			LOG("Not found data file: %s\n", f->data_file[i]);
+		}
 		return -1;
 	}
 	p->data->wd_get_head(&p->data_head);
@@ -488,7 +490,7 @@ int WikiManage::wiki_match_lang(wiki_title_t **buf, int *total, int *flag)
 {
 	*buf = m_match_title;
 	*total = m_match_title_total;
-	*flag = m_match_title_flag;
+	*flag = m_select_lang_total;
 
 	return m_match_title_total;
 }
@@ -652,10 +654,15 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 
 int WikiManage::wiki_not_found(char **buf, int *size, const char *str)
 {
-	m_buf_len = sprintf(m_buf, "%s", "<html><head><meta http-equiv=\"Content-Type\" "
-			"content=\"text/html;charset=utf8\"></head><body>\n");
+	char bg[16], fg[16], link[16];
+	int font_size;
 
-	m_buf_len += sprintf(m_buf + m_buf_len, "%s\n</body>\n</html>\n", str);
+	m_wiki_config->wc_get_config(bg, fg, link, &font_size);
+
+	m_buf_len = sprintf(m_buf, WIKI_START_HTML, bg, fg, font_size, link,
+			m_wiki_socket->ws_get_bind_port(), 0, 0, 1);
+
+	m_buf_len += sprintf(m_buf + m_buf_len, "%s%s", str, WIKI_HTTP_END_HTML);
 
 	m_buf[m_buf_len] = 0;
 
@@ -812,21 +819,16 @@ int WikiManage::wiki_select_lang(char lang[MAX_SELECT_LANG_TOTAL][24], int *tota
 	return 0;
 }
 
-#define ABOUT_HEAD "<html>\n<head>\n<title>FastWiki</title>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf8\"></head>\n" \
-		"</head>\n<body>\n<font size=4>\n"
-#define ABOUT_FOOT "</font>\n</body>\n</html>\n"
-
 char *WikiManage::wiki_about()
 {
-	int pos = 0;
+	int size;
+	char *buf, tmp[4096];
 
-	pos += sprintf(m_buf + pos, "%s", ABOUT_HEAD);
-	pos += sprintf(m_buf + pos, local_msg("FW_ABOUT_MSG"), _VERSION, __DATE__);
-	pos += sprintf(m_buf + pos, "%s", ABOUT_FOOT);
+	sprintf(tmp, _("FW_ABOUT_MSG"), _VERSION, __DATE__);
+	wiki_not_found(&buf, &size, tmp);
+	buf[size] = 0;
 
-	m_buf[pos] = 0;
-
-	return m_buf;
+	return buf;
 }
 
 int WikiManage::wiki_get_hide_menu_flag()
@@ -981,6 +983,40 @@ int WikiManage::wiki_parse_url_local(const char *url, char *flag, char *ret_titl
 	return 0;
 }
 
+/*
+ * parse "lang:dictionary:title"
+ */
+int WikiManage::wiki_parse_url_lang(const char *url, char *flag, char *title, char **data)
+{
+	int ret_size;
+	char *p, tmp[128];
+	struct one_lang *which;
+
+	strcpy(tmp, url);
+	url_convert(tmp);
+
+	if ((p = strchr(tmp, ':')) == NULL)
+		return -1;
+
+	*p++ = 0;
+
+	if ((which = wiki_get_lang_addr(tmp)) == NULL) {
+		wiki_init_one_lang(tmp, 0);
+		if ((which = wiki_get_lang_addr(tmp)) == NULL)
+			return -1;
+	}
+
+	m_curr_lang = which;
+
+	if (wiki_find_key(p, data, &ret_size) == 0) {
+		strcpy(title, p);
+		strcpy(flag, "1");
+		return 0;
+	}
+
+	return -1;
+}
+
 int WikiManage::wiki_parse_url(const char *url, char *flag, char *title, char **data)
 {
 	char *ret;
@@ -1003,19 +1039,68 @@ int WikiManage::wiki_parse_url(const char *url, char *flag, char *title, char **
 			strcpy(flag, "2");
 			strcpy(title, url);
 		}
+	} else if (strncmp(url, "lang:", 5) == 0) {
+		if (wiki_parse_url_lang(url + 5, flag, title, data) == -1) {
+			strcpy(flag, "0");
+			strcpy(m_buf, "Not Found.\n");
+			*data = m_buf;
+		}
 	}
 
 	return 0;
 }
 
-int WikiManage::wiki_random_page(char **buf, int *size)
+int WikiManage::wiki_random_history(char **buf, int *size)
 {
-	if (m_select_lang_total <= 0)
-		return wiki_not_found(buf, size, "I'm Blank");
+	struct one_lang *which;
 
+	history_key_t key;
+	history_value_t value;
+
+	if (!m_wiki_history->wh_random(&key, &value))
+		return wiki_not_found(buf, size, _("FW_RANDOM_RETRY"));
+
+	if ((which = wiki_get_lang_addr(key.lang)) == NULL) {
+		wiki_init_one_lang(key.lang, 0);
+		if ((which = wiki_get_lang_addr(key.lang)) == NULL) {
+			return wiki_not_found(buf, size, "Not found");
+		}
+	}
+	m_curr_lang = which;
+
+	return wiki_find_key(key.title, buf, size);
+}
+
+int WikiManage::wiki_random_favorite(char **buf, int *size)
+{
+	struct one_lang *which;
+
+	struct fav_key key;
+	struct fav_value value;
+
+	if (!m_wiki_favorite->wf_random(&key, &value))
+		return wiki_not_found(buf, size, _("FW_RANDOM_RETRY"));
+
+	if ((which = wiki_get_lang_addr(key.lang)) == NULL) {
+		wiki_init_one_lang(key.lang, 0);
+		if ((which = wiki_get_lang_addr(key.lang)) == NULL) {
+			return wiki_not_found(buf, size, "Not found");
+		}
+	}
+	m_curr_lang = which;
+
+	return wiki_find_key(key.title, buf, size);
+}
+
+int WikiManage::wiki_random_select_lang(char **buf, int *size)
+{
 	sort_idx_t idx;
 	int n = rand() % m_select_lang_total;
 	struct one_lang *which;
+
+	if (m_select_lang_total <= 0) /* TODO */
+		return wiki_not_found(buf, size, "I'm Blank");
+
 
 	if ((which = wiki_get_lang_addr(m_select_lang[n])) == NULL) {
 		wiki_init_one_lang(m_select_lang[n], 0);
@@ -1034,6 +1119,73 @@ int WikiManage::wiki_random_page(char **buf, int *size)
 			return n;
 		}
 	}
+
+	return -1;
+}
+
+int WikiManage::wiki_random_all_lang(char **buf, int *size)
+{
+
+	int total = 0;
+	struct lang_list lang[128];
+	struct one_lang *which;
+	sort_idx_t idx;
+
+	memset(lang, 0, sizeof(lang));
+	wiki_get_lang_list(lang, &total);
+
+	if (total <= 0)
+		return -1;
+
+	int n = rand() % total;
+
+	if ((which = wiki_get_lang_addr(lang[n].lang)) == NULL) {
+		wiki_init_one_lang(lang[n].lang, 0);
+		if ((which = wiki_get_lang_addr(lang[n].lang)) == NULL) {
+			return wiki_not_found(buf, size, "Not found");
+		}
+	}
+
+	m_curr_lang = which;
+
+	for (int i = 0; i < 100; i++) {
+		which->index->wi_random_key(&idx);
+		if ((n = wiki_read_data(&idx, buf, NULL)) > 0) {
+			wiki_push_back(STATUS_CONTENT, wiki_curr_title(), n, &idx);
+			*size = n;
+			return n;
+		}
+	}
+
+	return -1;
+}
+
+int WikiManage::wiki_random_page(char **buf, int *size)
+{
+	int n = -1, flag = wiki_get_random_flag();
+
+	switch (flag) {
+		case RANDOM_HISTORY:
+			n = wiki_random_history(buf, size);
+			break;
+
+		case RANDOM_FAVORITE:
+			n = wiki_random_favorite(buf, size);
+			break;
+
+		case RANDOM_SELECT_LANG:
+			n = wiki_random_select_lang(buf, size);
+			break;
+
+		case RANDOM_ALL_LANG:
+			n = wiki_random_all_lang(buf, size);
+			break;
+		default:
+			break;
+	};
+
+	if (n >= 0)
+		return n;
 
 	return wiki_not_found(buf, size, "I'm Blank.");
 }
@@ -1066,6 +1218,48 @@ int WikiManage::wiki_page_last_read(char **buf, int *size)
 	return -1;
 }
 
+int WikiManage::wiki_curr_date_home_page(char **buf, int *size)
+{
+	int pos = 0, total = 0;
+	char *lang, date[128], tmp[4096], save_date[128];
+	struct one_lang *which;
+
+	pos += sprintf(tmp, "<table cellspacing=0.5 width=100%% border=1>\n"
+					"<tr><td width=30%%>%s</td><td width=70%%>%s</td></tr>\n",
+					_("FW_HP_DICT"), _("FW_HP_CURR_DATE"));
+
+	for (int i = 0; i < m_select_lang_total; i++) {
+		lang = m_select_lang[i];
+		get_month_day_from_lang(date, lang);
+
+		if (date[0] == 0)
+			continue;
+
+		if ((which = wiki_get_lang_addr(lang)) == NULL) {
+			wiki_init_one_lang(lang, 0);
+			if ((which = wiki_get_lang_addr(lang)) == NULL) {
+				continue;
+			}
+		}
+
+		total++;
+		strcpy(save_date, date);
+		m_curr_lang = which;
+		pos += snprintf(tmp + pos, sizeof(tmp) - pos,
+					"<tr><td width=30%%>%s</td><td width=70%%><a href='lang:%s:%s'>%s</a></td></tr>\n",
+					lang, lang, date, date);
+	}
+
+	if (total == 0)
+		strcpy(tmp, _("CANNT_FIND_CURR_DATE"));
+	else if (total == 1)
+		return wiki_find_key(save_date, buf, size);
+	else
+		pos += snprintf(tmp + pos, sizeof(tmp) - pos, "%s", "</table>\n");
+
+	return wiki_not_found(buf, size, tmp);
+}
+
 int WikiManage::wiki_index_msg(char **buf, int *size)
 {
 	int n;
@@ -1073,7 +1267,9 @@ int WikiManage::wiki_index_msg(char **buf, int *size)
 
 	switch (flag) {
 		case HOME_PAGE_BLANK:
-			return wiki_not_found(buf, size, "Welcome To Use Fastwiki");
+			char tmp[1024];
+			sprintf(tmp, _("WELCOME"), _VERSION, __DATE__);
+			return wiki_not_found(buf, size, tmp);
 			break;
 
 		case HOME_PAGE_LAST_READ:
@@ -1082,25 +1278,9 @@ int WikiManage::wiki_index_msg(char **buf, int *size)
 			break;
 
 		case HOME_PAGE_CURR_DATE:
-#if 0
-			char date[128];
-			int total = 0;
-			for (int i = 0; i < m_select_lang_total; i++) {
-				get_month_day_from_lang(date, m_select_lang[i]);
-				if (date[0] != 0) {
-					if ((which = wiki_get_lang_addr(m_select_lang[i])) == NULL) {
-						wiki_init_one_lang(m_select_lang[i], 0);
-						if ((which = wiki_get_lang_addr(m_select_lang[i])) == NULL) {
-							return -1;
-						}
-					}
-				}
-			}
-#endif
-
-		case HOME_PAGE_HISTORY_RANDOM:
-		case HOME_PAGE_FAVORITE_RANDOM:
-			return wiki_not_found(buf, size, "History and Favorite random reading is not implement.");
+			if ((n = wiki_curr_date_home_page(buf, size)) != -1)
+				return n;
+			break;
 
 		default:
 			break;
@@ -1122,6 +1302,9 @@ int WikiManage::wiki_curr(char **buf, int *size)
 {
 	int n;
 	const cache_t *p = m_wiki_history->wh_curr_cache();
+
+	if (p == NULL)
+		return wiki_index_msg(buf, size);
 
 	if ((n = wiki_read_data(&p->idx, buf, NULL)) > 0) {
 		*size = n;
@@ -1229,19 +1412,23 @@ int WikiManage::wiki_clean_history()
 int WikiManage::wiki_view_history(int idx, char **buf, int *size)
 {
 	int n = 0;
+	char tmp[1024];
 	struct tmp_history *p = &m_history[idx];
 
 	if (idx < 0 || idx >= m_history_total)
 		return 0;
 
-	/* TODO */
-	wiki_init_one_lang(p->data->lang, 1);
-
-	if ((n = wiki_find_key(p->data->title, buf, size)) == 0) {
-		n = *size;
+	if (wiki_init_one_lang(p->data->lang, 1) == -1) {
+		sprintf(tmp, "Not found dictionary: %s", p->data->lang);
+		return wiki_not_found(buf, size, tmp);
 	}
 
-	return n;
+	if ((n = wiki_find_key(p->data->title, buf, size)) == -1) {
+		sprintf(tmp, "Not found %s in dictionary %s", p->data->title, p->data->lang);
+		return wiki_not_found(buf, size, tmp);
+	}
+
+	return *size;
 }
 
 int WikiManage::wiki_get_full_screen_flag()
@@ -1597,5 +1784,19 @@ int WikiManage::wiki_scan_sdcard()
 	m_wiki_config->wc_scan_all();
 	wiki_lang_init();
 
+	if (m_select_lang_total > 0)
+		m_init_flag = 1;
+
 	return 0;
 }
+
+int WikiManage::wiki_set_random_flag(int idx)
+{
+	return m_wiki_config->wc_set_random_flag(idx);
+}
+
+int WikiManage::wiki_get_random_flag()
+{
+	return m_wiki_config->wc_get_random_flag();
+}
+

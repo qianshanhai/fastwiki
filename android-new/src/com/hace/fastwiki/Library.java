@@ -59,7 +59,6 @@ public class Library extends SherlockActivity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState); 
 
-		this.requestWindowFeature(Window.FEATURE_NO_TITLE);  
 		setContentView(R.layout.library);  
 
 		final ActionBar ab = getSupportActionBar();
@@ -138,6 +137,7 @@ public class Library extends SherlockActivity {
 				break;
 
 			case R.id.library_menu_scan_sdcard:
+				show_short_msg(N("FW_LIBRARY_SCAN_START"));
 				ScanSDcard();
 				m_lang  = WikiLangList();
 				init_idx_backup();

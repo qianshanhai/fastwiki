@@ -922,3 +922,23 @@ int SHash::sh_get_addr(void **addr, int *size)
 	return 0;
 }
 
+int SHash::sh_random(void *key, void *value)
+{
+	void *p;
+	struct shm_hash_head *head = sh_get_head();
+
+	rec = sh_get_rec(head);
+
+	for (int i = 0; i < 256; i++) {
+		int r = rand() % head->curr;
+		p = sh_get_pos(rec, r);
+		if (sh_record_is_used(p)) {
+			memcpy(key, sh_get_key(p), key_len);
+			memcpy(value, sh_get_value(p), value_len);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+

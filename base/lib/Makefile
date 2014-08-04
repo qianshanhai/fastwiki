@@ -5,6 +5,7 @@ ANDK=/work/android/android-ndk
 cpp = arm-linux-androideabi-g++ -O2
 ar = arm-linux-androideabi-ar
 inc = -I$(ANDK)/platforms/android-13/arch-arm/usr/include
+cppflag = -DFW_NJI
 else
 ifeq ($(DEBUG), 1)
 cpp = g++ -g -DDEBUG -Wall -fPIC
@@ -18,7 +19,7 @@ inc = -I.
 endif
 
 arflag = rv
-cppflag = -D_FILE_OFFSET_BITS=64 -D_LARGE_FILE -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
+cppflag += -D_FILE_OFFSET_BITS=64 -D_LARGE_FILE -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE
 
 objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 

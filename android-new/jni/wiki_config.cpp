@@ -74,6 +74,11 @@ int WikiConfig::wc_init(const char *dir)
 	r = dashf(file);
 	wc_init_config(file);
 
+	if (m_config->use_language[0] == 0)
+		set_lang("en");
+	else
+		set_lang(m_config->use_language);
+
 	if (m_config->dir_total == 0) {
 		memset(m_config->base_dir, 0, sizeof(m_config->base_dir));
 		wc_add_dir(BASE_DIR);
@@ -168,11 +173,6 @@ int WikiConfig::wc_init_lang()
 		memcpy(m_config->select_lang, tmp, sizeof(m_config->select_lang));
 	}
 
-	if (m_config->use_language[0] == 0)
-		set_lang("en");
-	else
-		set_lang(m_config->use_language);
-
 	return 0;
 }
 
@@ -198,10 +198,91 @@ int WikiConfig::wc_clean_tmp_dir()
 
 int WikiConfig::wc_add_tmp_dir(const char *dir)
 {
-	if (m_tmp_dir_total >= 25)
+	if (m_tmp_dir_total >= MAX_TMP_DIR_TOTAL - 1)
 		return 0;
 
 	strncpy(m_tmp_dir[m_tmp_dir_total++], dir, MAX_FW_DIR_LEN - 1);
+
+	return 0;
+}
+
+static int _cmp_dir(const void *a, const void *b)
+{
+	const char *p1 = (const char *)a;
+	const char *p2 = (const char *)b;
+
+	return strcmp(p1, p2);
+}
+
+int sys_strncmp(const char *a, const char *b, int len, char *buf)
+{
+	return strncmp(a, b, len);
+}
+
+int dir_strncmp(const char *a, const char *b, int len, char *buf)
+{
+	char *pa, *pb;
+	
+	if ((pa = strrchr(a, '/')) == NULL || (pb = (strrchr(b, '/'))) == NULL)
+		return 1;
+
+	if (pa - a != pb - b)
+		return 1;
+
+	strncpy(buf, a, pa - a);
+	buf[pa - a] = 0;
+
+	return strncmp(a, b, pa - a);
+}
+
+int WikiConfig::wc_merge_tmp_dir_first(int flag,
+			tmp_dir_t tmp, int tmp_total, tmp_dir_t to, int *to_total,
+			int (*cmp)(const char *a, const char *b, int len, char *buf))
+{
+	char *curr;
+	char buf[256];
+
+	*to_total = 0;
+
+	for (int i = 0; i < tmp_total; i++) {
+		curr = tmp[i];
+		strcpy(to[(*to_total)++], curr);
+
+		if (i == tmp_total - 1)
+			break;
+		
+		if (cmp(curr, tmp[i + 1], strlen(curr), buf) != 0)
+			continue;
+
+		for (i++; i < tmp_total; i++) {
+			if (cmp(curr, tmp[i], strlen(curr), buf) != 0) {
+				i--;
+				break;
+			}
+		}
+
+		if (flag) 
+			strcpy(to[*to_total - 1], buf);
+	}
+
+	return *to_total;
+}
+
+int WikiConfig::wc_merge_tmp_dir()
+{
+	int total;
+	tmp_dir_t buf;
+
+	qsort(m_tmp_dir, m_tmp_dir_total, MAX_FW_DIR_LEN, _cmp_dir);
+
+	wc_merge_tmp_dir_first(0, m_tmp_dir, m_tmp_dir_total, buf, &total, sys_strncmp);
+	wc_merge_tmp_dir_first(1, buf, total, m_tmp_dir, &m_tmp_dir_total, dir_strncmp);
+
+	m_config->dir_total = m_tmp_dir_total;
+
+	for (int i = 0; i < m_tmp_dir_total; i++) {
+		strncpy(m_config->base_dir[i], m_tmp_dir[i], sizeof(m_config->base_dir[i]) - 1);
+	}
 
 	return 0;
 }
@@ -225,14 +306,12 @@ int WikiConfig::wc_scan_all()
 		wc_scan_sdcard(tmp[i], 0);
 
 	wc_scan_sdcard("/mnt", 0);
-
-	m_config->dir_total = m_tmp_dir_total;
-
-	for (int i = 0; i < m_tmp_dir_total; i++) {
-		strncpy(m_config->base_dir[i], m_tmp_dir[i], sizeof(m_config->base_dir[i]) - 1);
-	}
+	wc_merge_tmp_dir();
 
 	wc_init_lang();
+
+	if (m_file_total > 0)
+		wc_set_translate_default(m_file[0].lang);
 
 	return 0;
 }
@@ -568,10 +647,8 @@ int WikiConfig::wc_switch_full_screen()
 int WikiConfig::wc_set_default_lang(const char lang[MAX_SELECT_LANG_TOTAL][24], int total)
 {
 	m_config->select_lang_total = total;
-	LOG("total = %d\n", total);
 
 	for (int i = 0; i < total; i++) {
-		LOG("select lang: %s\n", lang[i]);
 		strncpy(m_config->select_lang[i], lang[i], sizeof(m_config->select_lang[i]) - 1);
 	}
 
@@ -623,7 +700,7 @@ int WikiConfig::wc_set_translate_show_line(int x)
 
 int WikiConfig::wc_get_use_language()
 {
-	return strcmp(m_config->use_language, "en") == 0 ? 0 : 1;
+	return strcmp(m_config->use_language, "zh") == 0 ? 1 : 0;
 }
 
 int WikiConfig::wc_set_use_language(int idx)
@@ -660,4 +737,16 @@ int WikiConfig::wc_set_translate_default(const char *lang)
 	strncpy(m_config->default_trans_lang, lang, sizeof(m_config->default_trans_lang) - 1);
 
 	return 0;
+}
+
+int WikiConfig::wc_get_random_flag()
+{
+	return m_config->random_flag;
+}
+
+int WikiConfig::wc_set_random_flag(int mode)
+{
+	m_config->random_flag = mode;
+
+	return mode;
 }

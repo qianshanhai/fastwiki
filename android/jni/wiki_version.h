@@ -14,7 +14,7 @@ static const char *about =
 		"data version: %s <br/>\n"
 		"page count: %d<br/><br/>\n"
 		"Fastwiki support all language wikipedia data in theory, Please visit <br/>\n"
-		"<a href='http://fastwiki.qwrite.info'>http://fastwiki.qwrite.info</a> "
+		"<a href='http://fastwiki.me'>http://fastwiki.me</a> "
 		"to see how many language had test.<br/>\n"
 		"<br/>\n"
 		"<br/>\n"

@@ -203,7 +203,6 @@ Java_com_hace_fastwiki_FastWiki_WikiBack(JNIEnv* env, jobject thiz)
 	memset(status, 0, sizeof(status));
 	args = env->NewObjectArray(2, env->FindClass("java/lang/String"), 0);
 
-	/* TODO maybe return -1 */
 	if ((n = m_wiki_manage->wiki_back(status, &buf, &size)) == -1)
 		buf = tmp[0];
 	else if (n == 0)
@@ -227,7 +226,6 @@ Java_com_hace_fastwiki_FastWiki_WikiForward(JNIEnv* env, jobject thiz)
 	memset(status, 0, sizeof(status));
 	args = env->NewObjectArray(2, env->FindClass("java/lang/String"), 0);
 
-	/* TODO maybe return -1 */
 	if ((n = m_wiki_manage->wiki_forward(status, &buf, &size)) == -1)
 		buf = tmp[0];
 	else if (n == 0)
@@ -359,7 +357,7 @@ Java_com_hace_fastwiki_FastWiki_WikiLangList(JNIEnv* env, jobject thiz)
 	jstring str;
 
 	int total, i;
-	struct lang_list lang[32];
+	struct lang_list lang[128];
 
 	memset(lang, 0, sizeof(lang));
 
@@ -777,6 +775,18 @@ jint
 Java_com_hace_fastwiki_FastwikiSetting_SetHomePageFlag(JNIEnv* env, jobject thiz, jint flag)
 {
 	return m_wiki_manage->wiki_set_home_page_flag(flag);
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_GetRandomFlag(JNIEnv* env, jobject thiz)
+{
+	return m_wiki_manage->wiki_get_random_flag();
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetRandomFlag(JNIEnv* env, jobject thiz, jint flag)
+{
+	return m_wiki_manage->wiki_set_random_flag(flag);
 }
 
 jint

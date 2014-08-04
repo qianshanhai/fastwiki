@@ -339,6 +339,16 @@ static char *GET_MONTH_DAY(en)
 	return key;
 }
 
+static char *GET_MONTH_DAY(simple)
+{
+	return MONTH_DAY_FUNC(en)(key, tm_mon, tm_mday);
+}
+
+static char *GET_MONTH_DAY(en_simple)
+{
+	return MONTH_DAY_FUNC(en)(key, tm_mon, tm_mday);
+}
+
 static char *GET_MONTH_DAY(uk)
 {
 	const char *month[] = {
@@ -422,6 +432,8 @@ struct __month_day {
 	char *(*func)(char *key, int tm_mon, int tm_mday);
 } all_month_day[] = {
 	_GET_MONTH_DAY(en),
+	_GET_MONTH_DAY(simple),
+	_GET_MONTH_DAY(en_simple),
 	_GET_MONTH_DAY(de), /* µ¬”Ô */
 	_GET_MONTH_DAY(fr), /* ∑®”Ô */
 	_GET_MONTH_DAY(nl), /* ∫…¿º”Ô */

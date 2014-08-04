@@ -47,7 +47,7 @@ int WikiImage::we_init(const fw_files_t file, int total)
 		return -1;
 
 	for (int i = 0; i < total; i++) {
-		if ((fd = open(file[i], O_RDONLY | O_BINARY)) == -1) {
+		if ((fd = open(file[i], O_RDONLY | O_BINARY | O_LARGEFILE)) == -1) {
 			perror(file[i]);
 			return -1;
 		}
@@ -199,11 +199,16 @@ int WikiImage::we_init(const char *lang, const char *date)
 	return 0;
 }
 
-#define _MAX_IMAGE_FILE_SIZE (1990*1024*1024)
+#define _MAX_IMAGE_FILE_SIZE (1900*1024*1024)
 
 int WikiImage::we_add_one_image(const char *fname, const char *data, int len)
 {
-	if (m_curr_size > _MAX_IMAGE_FILE_SIZE) {
+	int max_size = _MAX_IMAGE_FILE_SIZE;
+
+	if (m_curr_file_idx == 0)
+		max_size -= 200*1024*1024;
+
+	if (m_curr_size > max_size) {
 		we_add_done();
 		we_new_file();
 	}

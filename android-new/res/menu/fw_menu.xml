@@ -1,115 +1,79 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/fw_setting"
 	>  
-	<item
-		android:id="@+id/library"
-		android:icon="@drawable/ic_library"
-		android:showAsAction="ifRoom"  
-		android:title="add"  
-		android:titleCondensed="add">  
-	</item>
 	<item  
 		android:id="@+id/ic_view"  
 		android:icon="@drawable/ic_view"
-		android:showAsAction="ifRoom"  
-		android:title="delete"  
-		android:titleCondensed="delete">  
+		android:showAsAction="never"  
+		android:title="view_option"> 
 		<menu>
 			<item  
 				android:id="@+id/display_top"
 				android:icon="@drawable/ic_entry_prev"  
-				android:showAsAction="ifRoom"  
-				android:title="top"
-				android:titleCondensed="top">  
+				android:title="top">
 			</item>  
 			<item  
 				android:id="@+id/forward"  
 				android:icon="@drawable/ic_nav_forward"  
-				android:showAsAction="ifRoom"  
-				android:title="forward"
-				android:titleCondensed="forward">  
-			</item>  
-			<item  
-				android:id="@+id/back"
-				android:icon="@drawable/ic_nav_back"  
-				android:showAsAction="ifRoom"
-				android:title="back"  
-				android:titleCondensed="back">  
+				android:title="forward">
 			</item>  
 			<item  
 				android:id="@+id/zoom_in"
 				android:icon="@drawable/ic_zoom_in"  
-				android:showAsAction="ifRoom"
-				android:title="zoom_in"  
-				android:titleCondensed="zoom_in">  
+				android:title="zoom_in">
 			</item>  
 			<item  
 				android:id="@+id/zoom_out"
 				android:icon="@drawable/ic_zoom_out"  
-				android:showAsAction="ifRoom"
-				android:title="zoom_out"  
-				android:titleCondensed="zoom_out">  
+				android:title="zoom_out">  
 			</item>  
 			<item  
 				android:id="@+id/shuffle"
 				android:icon="@drawable/shuffle"  
-				android:showAsAction="ifRoom"
-				android:title="shuffle"  
-				android:titleCondensed="shuffle">  
+				android:title="shuffle">  
 			</item>  
-			<item  
-				android:id="@+id/read_mode"
-				android:icon="@drawable/shuffle"  
-				android:showAsAction="ifRoom"
-				android:title="read_mode"  
-				android:titleCondensed="read_mode">  
-				<menu>
-					<item
-						android:id="@+id/day_mode"
-						android:icon="@drawable/day_mode"  
-						android:showAsAction="ifRoom"
-						android:title="day_mode"  
-						android:titleCondensed="day_mode">  
-					</item>
-					<item
-						android:id="@+id/night_mode"
-						android:icon="@drawable/night_mode"  
-						android:showAsAction="ifRoom"
-						android:title="night_mode"  
-						android:titleCondensed="night_mode">  
-					</item>
-				</menu>
-			</item>  
+			<item
+				android:id="@+id/day_mode"
+				android:icon="@drawable/day_mode"  
+				android:title="day_mode"  
+				android:titleCondensed="day_mode">  
+			</item>
+			<item
+				android:id="@+id/night_mode"
+				android:icon="@drawable/night_mode"  
+				android:title="night_mode">  
+			</item>
 			<item  
 				android:id="@+id/add_to_fav"
 				android:icon="@drawable/ic_add_to_fav"
-				android:showAsAction="ifRoom"
-				android:title="add_to_fav"  
-				android:titleCondensed="add_to_fav">  
+				android:title="add_to_fav">  
 			</item>  
 		</menu>
 	</item>  
+	<item
+		android:id="@+id/library"
+		android:icon="@drawable/ic_library"
+		android:showAsAction="never"  
+		android:title="Dictionary"> 
+	</item>
 	<item  
 		android:id="@+id/favorites"  
 		android:icon="@drawable/ic_favorites"  
-		android:showAsAction="ifRoom"  
-		android:title="add"  
-		android:titleCondensed="add">  
+		android:showAsAction="never"  
+		android:title="favorite">
 	</item>  
 
 	<item  
 		android:id="@+id/history"  
 		android:icon="@drawable/ic_history"  
-		android:showAsAction="ifRoom"  
-		android:title="add"  
-		android:titleCondensed="add">  
+		android:showAsAction="never"  
+		android:title="history">
 	</item>  
 	<item  
 		android:id="@+id/setting"  
 		android:icon="@drawable/ic_setting"
-		android:showAsAction="ifRoom"  
-		android:title="setting"  
-		android:titleCondensed="setting">  
+		android:showAsAction="never"  
+		android:title="setting">
 	</item>  
 	<item  
 		android:id="@+id/about"
@@ -117,13 +81,8 @@
 		android:title="about">
 	</item>  
 	<item  
-		android:id="@+id/help"  
-		android:showAsAction="never"
-		android:title="help">  
-	</item>  
-	<item  
 		android:id="@+id/quit"  
 		android:showAsAction="never"
-		android:title="quit">  
+		android:title="exit">  
 	</item>  
 </menu>

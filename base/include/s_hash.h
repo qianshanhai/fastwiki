@@ -123,6 +123,7 @@ public:
 	int sh_fd_reset();
 	int sh_fd_read_next(void *key, void *value);
 
+	int sh_random(void *key, void *value);
 };
 
 #endif

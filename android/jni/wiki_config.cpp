@@ -15,7 +15,7 @@
 
 #include "wiki_config.h"
 
-#ifdef FW_DEBUG
+#if (defined(FW_DEBUG) || defined(FW_NJI))
 int LOG(const char *fmt, ...)
 {
 	int n, now_n;
