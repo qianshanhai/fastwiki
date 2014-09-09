@@ -29,7 +29,7 @@
 "		div.thumbinner{border:1px solid #cccccc;padding:3px !important;background-color:White;font-size:94%%;text-align:center;overflow:hidden}\n" \
 "\n" \
 "		body {\n" \
-"			background:%s;\n" \
+"			%s\n" \
 "			color:%s;\n" \
 "			font-size:%dpt;\n" \
 "		}\n" \
@@ -144,7 +144,7 @@
 "</script>\n" \
 "</head>\n" \
 "\n" \
-"<body>\n" \
+"<body %s>\n" \
 "\n" \
 
 

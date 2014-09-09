@@ -226,6 +226,75 @@
 				android:layout_width="wrap_content"  
 				android:layout_height="wrap_content" />
 		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+			<TextView android:id="@+id/use_body_image"
+				android:layout_weight="1"
+				android:layout_width="fill_parent"  
+				android:layout_height="fill_parent"   
+				android:textColor="#ffffff"
+				android:background="#000000"
+				android:text="use body image"
+				android:textSize="18dip"
+				>
+			</TextView>
+			<CheckBox    
+				android:id="@+id/body_image_box"
+				android:layout_width="wrap_content"    
+				android:layout_height="wrap_content"    
+				/>
+		</LinearLayout>
+
+		<View android:layout_height="2px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/select_body_image_text"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="select body image text"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+			<Button
+				android:id="@+id/select_body_image"
+				android:layout_width="120dip"  
+				android:layout_height="wrap_content"  
+				android:text="....."
+				/>
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/body_image_path"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="body_image_path"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+		</LinearLayout>
+
 		<View android:layout_height="2px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>

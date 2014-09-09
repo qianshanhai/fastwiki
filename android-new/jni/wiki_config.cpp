@@ -305,7 +305,9 @@ int WikiConfig::wc_scan_all()
 	for (int i = 0; i < total; i++)
 		wc_scan_sdcard(tmp[i], 0);
 
+	wc_scan_sdcard("/storage", 1);
 	wc_scan_sdcard("/mnt", 0);
+
 	wc_merge_tmp_dir();
 
 	wc_init_lang();
@@ -750,3 +752,29 @@ int WikiConfig::wc_set_random_flag(int mode)
 
 	return mode;
 }
+
+int WikiConfig::wc_get_body_image_flag()
+{
+	return m_config->body_image_flag;
+}
+
+int WikiConfig::wc_set_body_image_flag(int flag)
+{
+	m_config->body_image_flag = flag;
+
+	return 0;
+}
+
+const char *WikiConfig::wc_get_body_image_path()
+{
+	return m_config->body_image_path;
+}
+
+int WikiConfig::wc_set_body_image_path(const char *path)
+{
+	memset(m_config->body_image_path, 0, sizeof(m_config->body_image_path));
+	strncpy(m_config->body_image_path, path, sizeof(m_config->body_image_path) - 1);
+
+	return 0;
+}
+

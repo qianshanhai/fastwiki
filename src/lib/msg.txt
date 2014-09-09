@@ -2,11 +2,6 @@
 
 WELCOME "Welcome to use Fastwiki.<br/><br/>Version: %s, %s <br/>"
 
-SELECT_FOLDER_TITLE "Select a folder"
-SELECT_FOLDER_MSG 	"Not found any fastwiki data file in "
-SELECT_FOLDER_OK 	"OK"
-SELECT_FOLDER_CANCLE "Cancle"
-
 NOT_FOUND_TITLE 	"Not Found"
 NOT_FOUND_MSG 		"You can input to check again."
 NOT_FOUND_OK 		"OK"
@@ -15,21 +10,8 @@ EXIT_TITLE 			"Exit fastwiki?"
 EXIT_NO 			"No"
 EXIT_YES 			"Yes"
 
-MENU_HISTORY 		"history"
-MENU_ABOUT 			"About Fastwiki"
-MENU_OPTION 		"option"
-MENU_SEL_FOLDER 	"select data file folder"
-MENU_EXIT 			"exit"
-
-WIKI_NOT_DATA_FILE 	"Not found any data file. You can goto <br/><a href='http://fastwiki.qwrite.info'>fastwiki.qwrite.info</a> and download the convert tools to create offline data file.<br/>If you had install offline data file, then setting the folder by 'MENU->option->select data file folder'<br/><br/><br/>Chinese:<br/>没有发现数据文件, 请检查. <br/><br/>若您第一次安装, 请到<a href='http://dl.vmall.com/c0btet4irh'>官方网盘</a>下载离线数据包<br/><br/>如果已经安装了数据文件, 可以这样设置:<br/> 菜单->选项->选择数据目录"
-
-
 WIKI_HREF_NOTFOUND  "Not found. But you can input to check again."
-WIKI_NOT_FOUND_HOME_PAGE "Not found home page. If you had install fastwiki data, you can check your language in:<br/>\nhttp://fastwiki.qwrite.info/en/faq.html<br/>\n if not, please tell me."
 
-MENU_SET_HOME_PAGE "Setting homepage"
-MENU_DATE_PAGE "Set homepage to date page"
-MENU_RANDOM_PAGE "Set homepage to random page"
 FIRST_PAGE "It's the first page, press again to exit."
 LAST_PAGE "This is the end page"
 MENU_FAVORITE "Favorite"
@@ -38,9 +20,6 @@ ADD_FAV_MSG "add to favorite"
 DEL_FAV_MSG "delete favorite"
 
 CONTENT_LAST_PAGE "It's last page"
-FONT_SIZE "font size: "
-
-MENU_HIDE_SHOW_MENU "hide/show menu"
 
 HISTORY_TOTAL "Total"
 HISTORY_SELECT "Select"
@@ -52,8 +31,6 @@ HISTORY_YES "Yes"
 HISTORY_NO  "No"
 
 FAVORITE_MANAGE "Manage Favorite"
-
-SCREEN_FULL "Full screen"
 
 FW_SETTING       "Fastwiki Setting"
 FW_SEL_LANG      "Select language"
@@ -92,7 +69,7 @@ FW_LIBRARY_SCAN_START "Scan sdcard may take some minitus, please wait..."
 FW_LIBRARY_SCAN_DONE "Scan Sdcard files done."
 
 FW_ABOUT_TITLE "About Fastwiki"
-FW_ABOUT_MSG "Author: Qianshanhai &lt;qianshanhai At gmail Dot com&gt; <br/>\n Version: %s, %s <br/>\nHome Page: <a href='http://fastwiki.me'>http://fastwiki.me</a> <br/>\nTwitter: <a href=http://twitter.com/fastwiki>twitter.com/fastwiki</a><br/>\nSource code: <a href=https://github.com/qianshanhai/fastwiki>github.com/qianshanhai/fastwiki</a><br/>\n"
+FW_ABOUT_MSG "Author: Qianshanhai &lt;qianshanhai At gmail Dot com&gt; <br/>\n Version: %s, %s <br/>\nHome Page: <a href='https://fastwiki.me'>https://fastwiki.me</a> <br/>\nTwitter: <a href=http://twitter.com/fastwiki>twitter.com/fastwiki</a><br/>\nSource code: <a href=https://github.com/qianshanhai/fastwiki>github.com/qianshanhai/fastwiki</a><br/>\n"
 
 FW_MENU_VIEW_OPTION "View Option"
 FW_MENU_LIBRARY "Dictionary"
@@ -112,15 +89,15 @@ FW_MENU_DAY_MODE "Day Mode"
 FW_MENU_NIGHT_MODE "Night Mode"
 FW_MENU_ADD_TO_FAV "Add to favorite""
 
+FW_FB_BODY_IMAGE "set background image"
+FW_FB_OK "OK"
+FW_FB_SELECT_ONE "Please select a image file"
+FW_FB_ENABLE_BODY_IMAGE "Enable background image"
+FW_FB_SELECT_BODY_IMAGE "Select background image"
+
 #zh
 
 WELCOME "欢迎使用 Fastwiki<br/><br/>当前版本: %s, %s <br/>"
-
-SELECT_FOLDER_TITLE "选择一个目录"
-SELECT_FOLDER_MSG 	"没有发现 fastwiki 的数据文件在此目录中: "
-SELECT_FOLDER_OK 	"确定"
-
-SELECT_FOLDER_CANCLE "取消"
 
 NOT_FOUND_TITLE 	"没有找到"
 NOT_FOUND_MSG 		"可以输入试试"
@@ -130,20 +107,7 @@ EXIT_TITLE 			"退出 fastwiki?"
 EXIT_NO 			"取消"
 EXIT_YES 			"确定"
 
-MENU_HISTORY 		"历史"
-MENU_ABOUT 			"关于本软件"
-MENU_OPTION 		"选项"
-MENU_SEL_FOLDER 	"选择数据目录"
-MENU_EXIT 			"退出"
-
-WIKI_NOT_DATA_FILE 	"没有发现数据文件, 请检查. <br/><br/>若您第一次安装, 请到<a href='http://dl.vmall.com/c0btet4irh'>官方网盘</a>下载离线数据包<br/><br/>如果已经安装了数据文件, 可以这样设置:<br/> 菜单->选项->选择数据目录"
-
 WIKI_HREF_NOTFOUND  "没有找到, 不过您可以输入试一试."
-WIKI_NOT_FOUND_HOME_PAGE "没有发现当前日期的信息. 如果已经安装离线数据包, 请检查数据包的语言有没有在这个列表里:<br/>\n http://fastwiki.qwrite.info/zh/faq.html<br/>\n 如果不在, 请告知作者."
-
-MENU_SET_HOME_PAGE "设置首页"
-MENU_DATE_PAGE "设置首页为当前日期"
-MENU_RANDOM_PAGE "设置首页为随机页面"
 
 FIRST_PAGE "已经是第一个,再按一次退出."
 LAST_PAGE "已经是最后一个啦"
@@ -155,10 +119,6 @@ DEL_FAV_MSG "删除收藏"
 
 CONTENT_LAST_PAGE "已经是最后一页啦"
 
-FONT_SIZE "字体大小: "
-
-MENU_HIDE_SHOW_MENU "隐藏/显示菜单"
-
 HISTORY_TOTAL "总数"
 HISTORY_SELECT "选择"
 HISTORY_MANAGE "管理历史记录"
@@ -169,8 +129,6 @@ HISTORY_YES "确定"
 HISTORY_NO  "取消"
 
 FAVORITE_MANAGE "管理收藏"
-
-SCREEN_FULL "全屏"
 
 FW_SETTING "Fastwiki 参数设置"
 FW_SEL_LANG "选择语言"
@@ -209,8 +167,7 @@ FW_LIBRARY_SCAN_DONE "扫描存储卡完成"
 FW_LIBRARY_LESS_1 "至少选择一个词典"
 
 FW_ABOUT_TITLE "关于 Fastwiki"
-FW_ABOUT_MSG "作者: 钱善海 &lt;qianshanhai At gmail Dot com&gt; <br/>\n 版本: %s, %s <br/>\n主页: <a href='http://fastwiki.me'>http://fastwiki.me</a> <br/>\n微博: <a href=http://weibo.com/fastwiki>weibo.com/fastwiki</a><br/>\n源代码: <a href=https://github.com/qianshanhai/fastwiki>github.com/qianshanhai/fastwiki</a><br/>\n""
-
+FW_ABOUT_MSG "作者: 钱善海 &lt;qianshanhai At gmail Dot com&gt; <br/>\n 版本: %s, %s <br/>\n主页: <a href='https://fastwiki.me'>https://fastwiki.me</a> <br/>\n微博: <a href=http://weibo.com/fastwiki>weibo.com/fastwiki</a><br/>\n源代码: <a href=https://github.com/qianshanhai/fastwiki>github.com/qianshanhai/fastwiki</a><br/>\n""
 
 FW_MENU_VIEW_OPTION "屏幕选项"
 FW_MENU_LIBRARY "词典管理"
@@ -229,4 +186,10 @@ FW_MENU_RANDOM "随机条目"
 FW_MENU_DAY_MODE "白天阅读模式"
 FW_MENU_NIGHT_MODE "夜晚阅读模式"
 FW_MENU_ADD_TO_FAV "收藏此条目"
+
+FW_FB_BODY_IMAGE "选择背景图片"
+FW_FB_OK "确定"
+FW_FB_SELECT_ONE "请先选中一个图片文件"
+FW_FB_ENABLE_BODY_IMAGE "启用背景图片"
+FW_FB_SELECT_BODY_IMAGE "选择背景图片"
 

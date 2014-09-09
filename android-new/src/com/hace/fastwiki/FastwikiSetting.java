@@ -25,6 +25,7 @@ import android.widget.Toast;
 import android.view.View;
 import android.view.LayoutInflater;
 import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.AdapterView;  
 import android.widget.AdapterView.OnItemSelectedListener;  
 import android.widget.ArrayAdapter;  
@@ -56,10 +57,12 @@ public class FastwikiSetting extends SherlockActivity {
 
 	CheckBox m_translate_box = null;
 	CheckBox m_full_screen_box = null;
+	CheckBox m_body_image_box = null;
 
 	String [] m_lang_list = null;
 	private ViewGroup customViewForDictView;
 	TextView m_head_text = null;
+	TextView m_body_image_path = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -206,7 +209,44 @@ public class FastwikiSetting extends SherlockActivity {
 		});
 
 		translate_line();
+
+		set_body_image();
+
 		init_full_screen();
+	}
+
+	private void set_body_image()
+	{
+		TextView use_body_image = (TextView)findViewById(R.id.use_body_image);
+		use_body_image.setText(N("FW_FB_ENABLE_BODY_IMAGE"));
+
+		m_body_image_box = (CheckBox)findViewById(R.id.body_image_box);
+		m_body_image_box.setChecked(GetBodyImageFlag() == 0 ? false : true);
+
+		m_body_image_box.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){ 
+			@Override 
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) { 
+				if (isChecked) {
+					SetBodyImageFlag(1);
+				} else {
+					SetBodyImageFlag(0);
+				}
+			}
+		});
+
+		TextView select_body_image_text = (TextView)findViewById(R.id.select_body_image_text);
+		select_body_image_text.setText(N("FW_FB_SELECT_BODY_IMAGE"));
+
+		Button m_body_button = (Button)findViewById(R.id.select_body_image);
+		m_body_button.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View v) {
+				startIntentForClass(200, FileBrowse.class);
+			}
+		});
+
+		m_body_image_path = (TextView)findViewById(R.id.body_image_path);
+
+		show_body_image_path();
 	}
 
 	private void set_one_text(int id, String s)
@@ -294,6 +334,36 @@ public class FastwikiSetting extends SherlockActivity {
 		toast.show();
 	}
 
+	protected void startIntentForClass(int requestCode, java.lang.Class<?> cls){
+		Intent intent = new Intent();
+		intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		intent.setClass(this, cls);
+		startActivityForResult(intent, requestCode);
+	}
+
+	private void show_body_image_path()
+	{
+		String m = GetBodyImagePath();
+
+		m_body_image_path.setText(m);
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		Bundle bundle = null;
+		if(data == null || (bundle = data.getExtras()) == null)
+			return;
+
+		if (requestCode == 200) {
+			String path = bundle.getString("body_path");
+			if (!path.equals("")) {
+				SetBodyImagePath(path);
+				show_body_image_path();
+			}
+		}
+	}
+
 	public native int GetMutilLangListMode();
 	public native int SetMutilLangListMode(int mode);
 
@@ -319,4 +389,10 @@ public class FastwikiSetting extends SherlockActivity {
 
 	public native int WikiSwitchFullScreen();
 	public native int WikiGetFullScreenFlag();
+
+	public native int GetBodyImageFlag();
+	public native int SetBodyImageFlag(int f);
+
+	public native String GetBodyImagePath();
+	public native int SetBodyImagePath(String m);
 }

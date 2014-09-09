@@ -95,20 +95,20 @@ typedef struct {
 	int  select_lang_total;
 	int  mutil_lang_list_mode; /* =0 output sort by lang, =1 output sort by title */ 
 	char use_language[24];
-	char r0[48];
+	char body_image_path[48];
 	int font_size;
 	unsigned int view_size_g; /* with G */
 	unsigned int view_size_byte; /* with byte */
 	unsigned int view_total; 
 	unsigned int home_page; /* HOME_PAGE_ */
 	unsigned int random_flag; /* RANDOM_ */
-	char r1[40];
+	unsigned int body_image_flag; /* =1 use body image, =0 none */
+	char r1[36];
 	int hide_menu_flag; /* =1 hide, =0 show */
 	int color_index; /* 0 = */
 	int color_total;
 	color_t color[MAX_COLOR_TOTAL];
 	int full_screen_flag; /* 1 = full screen */
-
 	int translate_flag;   /* =1 enable, =0 disable */
 	int translate_show_line; /* default = 6 */
 	char default_trans_lang[24];
@@ -233,6 +233,11 @@ class WikiConfig {
 
 		int wc_get_random_flag();
 		int wc_set_random_flag(int mode);
+
+		int wc_get_body_image_flag();
+		int wc_set_body_image_flag(int flag);
+		const char *wc_get_body_image_path();
+		int wc_set_body_image_path(const char *path);
 
 	private:
 		int wc_init_config(const char *file);

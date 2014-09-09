@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <time.h>
+#include <dirent.h>
 #include <jni.h>
 
 #define MAX_KEY_LEN 64
@@ -441,7 +442,7 @@ Java_com_hace_fastwiki_FastWiki_WikiParseUrl(JNIEnv* env, jobject thiz, jstring 
 	char flag[8], title[256], *data = NULL;
 	const char *buf[3] = {flag, title, NULL};
 
-	args = env->NewObjectArray(3, env->FindClass("java/lang/String"),0);
+	args = env->NewObjectArray(3, env->FindClass("java/lang/String"), 0);
 
 	m_wiki_manage->wiki_parse_url(url, flag, title, &data);
 
@@ -624,6 +625,12 @@ Java_com_hace_fastwiki_Favorite_N(JNIEnv* env, jobject thiz, jstring flag)
 
 jstring
 Java_com_hace_fastwiki_Library_N(JNIEnv* env, jobject thiz, jstring flag)
+{
+	return Java_com_hace_fastwiki_FastWiki_N(env, thiz, flag);
+}
+
+jstring
+Java_com_hace_fastwiki_FileBrowse_N(JNIEnv* env, jobject thiz, jstring flag)
 {
 	return Java_com_hace_fastwiki_FastWiki_N(env, thiz, flag);
 }
@@ -821,6 +828,130 @@ jint
 Java_com_hace_fastwiki_FastwikiSetting_SetTranslateDefault(JNIEnv* env, jobject thiz, jstring lang)
 {
 	return m_wiki_manage->wiki_set_translate_default(my_get_string(lang));
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_GetBodyImageFlag(JNIEnv* env, jobject thiz)
+{
+	return m_wiki_manage->wiki_get_body_image_flag();
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetBodyImageFlag(JNIEnv* env, jobject thiz, jint flag)
+{
+	return m_wiki_manage->wiki_set_body_image_flag(flag);
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetBodyImagePath(JNIEnv* env, jobject thiz, jstring path)
+{
+	return m_wiki_manage->wiki_set_body_image_path(my_get_string(path));
+}
+
+jstring
+Java_com_hace_fastwiki_FastwikiSetting_GetBodyImagePath(JNIEnv* env, jobject thiz)
+{
+	return env->NewStringUTF(m_wiki_manage->wiki_get_body_image_path());
+}
+
+int _cmp_file_name(const void *a, const void *b)
+{
+	const char *pa = (const char *)a;
+	const char *pb = (const char *)b;
+
+	return strcmp(pa + 1, pb + 1);
+}
+
+jstring
+Java_com_hace_fastwiki_FileBrowse_RealPath(JNIEnv* env, jobject thiz, jstring path)
+{
+	int len;
+	char *p, buf[256];
+
+	memset(buf, 0, sizeof(buf));
+	strncpy(buf, my_get_string(path), sizeof(buf) - 1);
+
+	len = strlen(buf);
+
+	if (len > 2 && strncmp(buf + len - 3, "/..", 3) == 0) {
+		buf[len - 3] = 0;
+		if ((p = strrchr(buf, '/')))
+			*p = 0;
+	}
+
+	if (buf[0] == 0)
+		strcpy(buf, "/");
+
+	return env->NewStringUTF(buf);
+}
+
+int is_image_fname(const char *fname)
+{
+	int len;
+	const char *img[] = {
+		".jpg",
+		".png",
+		".jpeg",
+		".bmp",
+		NULL,
+	};
+
+	len = strlen(fname);
+
+	if (len <= 3)
+		return 0;
+
+	for (int i = 0; img[i]; i++) {
+		int t = strlen(img[i]);
+		if (strncasecmp(fname + len - t, img[i], t) == 0)
+			return 1;
+	}
+
+	return 0;
+}
+
+jobjectArray
+Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring path)
+{
+	int total = 0;
+	char buf[200][64], tmp[128];
+	jobjectArray ret;
+
+	const char *file = my_get_string(path);
+
+	DIR *dirp;
+	struct dirent *d;
+
+	if ((dirp = opendir(file)) == NULL)
+		dirp = opendir("/");
+
+	sprintf(buf[total++], "1..");
+
+	while ((d = readdir(dirp))) {
+		if (d->d_name[0] == '.')
+			continue;
+
+		sprintf(tmp, "%s/%s", file, d->d_name);
+		
+		if (dashf(tmp) && access(tmp, R_OK) == 0) {
+			if (is_image_fname(d->d_name))
+				sprintf(buf[total++], "0%s", d->d_name);
+		} else if (dashd(tmp) && access(tmp, R_OK | X_OK) == 0) {
+			sprintf(buf[total++], "1%s", d->d_name);
+		}
+	}
+
+	closedir(dirp);
+
+	qsort(buf, total, 64, _cmp_file_name);
+
+	ret = env->NewObjectArray(total, env->FindClass("java/lang/String"), 0);
+
+	for (int i = 0; i < total; i++) {
+		env->SetObjectArrayElement(ret, i, env->NewStringUTF(buf[i]));
+	}
+
+	return ret;
 }
 
 #ifdef __cplusplus

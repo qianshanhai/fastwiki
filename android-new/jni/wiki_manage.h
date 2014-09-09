@@ -247,6 +247,12 @@ class WikiManage {
 
 		int wiki_page_last_read(char **buf, int *size);
 		int wiki_scan_sdcard();
+
+		int wiki_get_body_image_flag();
+		int wiki_set_body_image_flag(int flag);
+
+		const char *wiki_get_body_image_path();
+		int wiki_set_body_image_path(const char *path);
 };
 
 #endif

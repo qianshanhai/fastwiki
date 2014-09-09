@@ -311,6 +311,19 @@ int WikiManage::wiki_do_url(void *type, int sock, const char *url, int idx)
 		return 0;
 	}
 
+	/* body image */
+	if (url[0] == 'B') {
+		mapfile_t mt;
+		const char *file = m_wiki_config->wc_get_body_image_path();
+		if (q_mmap(file, &mt)) {
+			ws->ws_http_output_head(sock, 200, "image/png", (int)mt.size);
+			ws->ws_http_output_body(sock, (char *)mt.start, mt.size);
+			q_munmap(&mt);
+		}
+
+		return 0;
+	}
+
 	/* image */
 	if (url[0] == 'I') {
 		char *p = (char *)url + 2;
@@ -630,14 +643,19 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 
 		int len;
 
-		char bg[16], fg[16], link[16];
+		char bg[16], fg[16], link[16], bg_str[64];
 		int font_size;
 
 		m_wiki_config->wc_get_config(bg, fg, link, &font_size);
 
+		sprintf(bg_str, "background:%s;\n", bg);
+
 		/* TODO WIKI_START_HTML */
-		len = sprintf(m_curr_page, WIKI_START_HTML, bg, fg, font_size, link, 
-					m_wiki_socket->ws_get_bind_port(), pos, height, split_total - 1);
+		len = sprintf(m_curr_page, WIKI_START_HTML,
+				m_wiki_config->wc_get_body_image_flag() ? "" : bg_str ,
+				fg, font_size, link, 
+				m_wiki_socket->ws_get_bind_port(), pos, height, split_total - 1,
+				m_wiki_config->wc_get_body_image_flag() ? " background=\"B.body.png\"" : "");
 
 		memcpy(m_curr_page + len, m_curr_content + m_split_pos[0].start, m_split_pos[0].len);
 		len += m_split_pos[0].len;
@@ -654,13 +672,17 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 
 int WikiManage::wiki_not_found(char **buf, int *size, const char *str)
 {
-	char bg[16], fg[16], link[16];
+	char bg[16], fg[16], link[16], bg_str[64];
 	int font_size;
 
 	m_wiki_config->wc_get_config(bg, fg, link, &font_size);
+	sprintf(bg_str, "background:%s;\n", bg);
 
-	m_buf_len = sprintf(m_buf, WIKI_START_HTML, bg, fg, font_size, link,
-			m_wiki_socket->ws_get_bind_port(), 0, 0, 1);
+	m_buf_len = sprintf(m_buf, WIKI_START_HTML,
+			m_wiki_config->wc_get_body_image_flag() ? "" : bg_str,
+			fg, font_size, link,
+			m_wiki_socket->ws_get_bind_port(), 0, 0, 1,
+			m_wiki_config->wc_get_body_image_flag() ? " background=\"B.body.png\"" : "");
 
 	m_buf_len += sprintf(m_buf + m_buf_len, "%s%s", str, WIKI_HTTP_END_HTML);
 
@@ -1800,3 +1822,23 @@ int WikiManage::wiki_get_random_flag()
 	return m_wiki_config->wc_get_random_flag();
 }
 
+
+int WikiManage::wiki_get_body_image_flag()
+{
+	return m_wiki_config->wc_get_body_image_flag();
+}
+
+int WikiManage::wiki_set_body_image_flag(int flag)
+{
+	return m_wiki_config->wc_set_body_image_flag(flag);
+}
+
+const char *WikiManage::wiki_get_body_image_path()
+{
+	return m_wiki_config->wc_get_body_image_path();
+}
+
+int WikiManage::wiki_set_body_image_path(const char *path)
+{
+	return m_wiki_config->wc_set_body_image_path(path);
+}
