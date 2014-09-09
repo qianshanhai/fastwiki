@@ -910,11 +910,13 @@ int is_image_fname(const char *fname)
 	return 0;
 }
 
+#define _MAX_IMAGE_TOTAL 250
+
 jobjectArray
 Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring path)
 {
 	int total = 0;
-	char buf[200][64], tmp[128];
+	char buf[_MAX_IMAGE_TOTAL][64], tmp[128];
 	jobjectArray ret;
 
 	const char *file = my_get_string(path);
@@ -931,13 +933,16 @@ Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring pa
 		if (d->d_name[0] == '.')
 			continue;
 
-		sprintf(tmp, "%s/%s", file, d->d_name);
+		if (total >= _MAX_IMAGE_TOTAL - 1)
+			break;
+
+		snprintf(tmp, sizeof(tmp), "%s/%s", file, d->d_name);
 		
 		if (dashf(tmp) && access(tmp, R_OK) == 0) {
 			if (is_image_fname(d->d_name))
-				sprintf(buf[total++], "0%s", d->d_name);
+				snprintf(buf[total++], sizeof(buf[0]), "0%s", d->d_name);
 		} else if (dashd(tmp) && access(tmp, R_OK | X_OK) == 0) {
-			sprintf(buf[total++], "1%s", d->d_name);
+			snprintf(buf[total++], sizeof(buf[0]), "1%s", d->d_name);
 		}
 	}
 
