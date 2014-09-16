@@ -12,12 +12,13 @@
 #include "crc32sum.h"
 #include "wiki_index.h"
 
+#define _WI_HREF_REDIRECT_FLAG 0x80000000 /* 1 << 31 */
+
 WikiIndex::WikiIndex()
 {
 	m_fp = NULL;
 
 	m_wi_head = NULL;
-	m_href_idx = NULL;
 	m_sort_idx = NULL;
 	m_key_string = NULL;
 	m_key_store = NULL;
@@ -288,6 +289,7 @@ int WikiIndex::wi_title_find(const char *title, int len)
 	struct tmp_key key;
 	struct tmp_value *f, *v[64];
 	sort_idx_t *p;
+	void *_find;
 	
 	unsigned char flag[64];
 	char buf[1024];
@@ -304,9 +306,9 @@ int WikiIndex::wi_title_find(const char *title, int len)
 	key.crc32 = crc32sum(buf, len);
 
 	total = 0;
-	m_title_hash->sh_begin();
+	m_title_hash->sh_begin(&_find);
 
-	while (m_title_hash->sh_next(&key, (void **)&f) == _SHASH_FOUND) {
+	while (m_title_hash->sh_next(&_find, &key, (void **)&f) == _SHASH_FOUND) {
 		p = &m_sort_idx[f->idx];
 		if (strcmp(m_key_string + p->key_pos, buf) == 0) {
 			v[total++] = f;
@@ -377,23 +379,24 @@ int WikiIndex::wi_set_head(wi_head_t *h, int idx_total, int key_len, int key_tot
 
 int WikiIndex::wi_output(const char *outfile)
 {
-	int *href_idx = (int *)calloc(m_idx_total, sizeof(int));
+	unsigned int *href_idx = (unsigned int *)calloc(m_idx_total, sizeof(unsigned int));
 
 	if (href_idx == NULL) {
 		printf("No enough memory: m_idx_total=%d\n", m_idx_total);
 		return -1;
 	}
 
-	memset(href_idx, 0, m_idx_total * sizeof(int));
+	memset(href_idx, 0, m_idx_total * sizeof(unsigned int));
 
 	for (int i = 0; i < m_idx_total; i++) {
 		sort_idx_t *p = &m_sort_idx[i];
-		href_idx[i] = i;
+		href_idx[i] = (unsigned int)i;
 		if (p->data_len == (unsigned short)-1) {
 			sort_idx_t *t = &m_sort_idx[p->data_pos];
 			p->data_file_idx = t->data_file_idx;
 			p->data_len = t->data_len;
 			p->data_pos = t->data_pos;
+			href_idx[i] |= _WI_HREF_REDIRECT_FLAG;
 		}
 	}
 
@@ -416,7 +419,7 @@ int WikiIndex::wi_output(const char *outfile)
 	return 0;
 }
 
-int WikiIndex::wi_write_index_file(const char *outfile, const wi_head_t *h, const int *href_idx,
+int WikiIndex::wi_write_index_file(const char *outfile, const wi_head_t *h, const unsigned int *href_idx,
 			sort_idx_t *sort_idx, const char *key_string, const char *store, const char *hash)
 {
 
@@ -631,17 +634,23 @@ static void print_head(wi_head_t *p)
 
 }
 
-inline int WikiIndex::wi_get_href_idx(int idx)
+inline unsigned int WikiIndex::wi_get_href_idx_sys(int idx)
 {
-	int tmp;
+	unsigned int tmp;
 
-	if (m_search_flag == 1)
-		return m_href_idx[idx];
-
-	lseek(m_fd, sizeof(wi_head_t) + idx * sizeof(int), SEEK_SET);
+	lseek(m_fd, sizeof(wi_head_t) + idx * sizeof(unsigned int), SEEK_SET);
 	read(m_fd, &tmp, sizeof(tmp));
 
 	return tmp;
+}
+
+inline int WikiIndex::wi_get_href_idx(int idx)
+{
+	unsigned int tmp = wi_get_href_idx_sys(idx);
+
+	tmp &= ~_WI_HREF_REDIRECT_FLAG;
+
+	return (int)tmp;
 }
 
 inline sort_idx_t *WikiIndex::wi_get_sort_idx(int idx)
@@ -1039,6 +1048,26 @@ int WikiIndex::wi_get_key(const sort_idx_t *idx, char *key)
 	strcpy(key, tmp);
 
 	return wi_unset_key_flag(key, idx->flag);
+}
+
+int WikiIndex::wi_href_total()
+{
+	return m_wi_head->href_idx_total;
+}
+
+int WikiIndex::wi_fetch(int index, sort_idx_t *idx)
+{
+	unsigned int tmp;
+
+	if (index >= 0 && index < m_wi_head->href_idx_total) {
+		tmp = wi_get_href_idx_sys(index);
+		if (!(tmp & _WI_HREF_REDIRECT_FLAG)) {
+			memcpy(idx, wi_get_sort_idx((int)tmp), sizeof(sort_idx_t));
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 /*

@@ -93,7 +93,6 @@ class WikiIndex {
 		char *m_tmp;
 		int m_key_total;
 
-		int *m_href_idx;
 		sort_idx_t *m_sort_idx;
 		char *m_key_string;
 		char *m_key_store; 
@@ -130,7 +129,7 @@ class WikiIndex {
 		int wi_output(const char *outfile);
 		int wi_set_head(wi_head_t *h, int idx_total, int key_len, int key_total,
 				int store_len, int hash_len);
-		int wi_write_index_file(const char *outfile, const wi_head_t *h, const int *href_idx,
+		int wi_write_index_file(const char *outfile, const wi_head_t *h, const unsigned int *href_idx,
 				sort_idx_t *sort_idx, const char *key_string, const char *store, const char *hash);
 
 	public:
@@ -158,11 +157,15 @@ class WikiIndex {
 		inline char *wi_get_key_string(const sort_idx_t *idx);
 		inline sort_idx_t *wi_get_sort_idx(int idx);
 		inline int wi_get_href_idx(int idx);
+		unsigned int wi_get_href_idx_sys(int idx);
 
 		int wi_set_key_flag(char *key, unsigned char *flag);
 		int wi_unset_key_flag(const char *old, char *key, unsigned const char *flag);
 		int wi_unset_key_flag(char *key, unsigned const char *flag);
 		sort_idx_t *wi_random_key(sort_idx_t *idx);
+
+		int wi_href_total();
+		int wi_fetch(int index, sort_idx_t *idx);
 };
 
 #ifdef __cplusplus
