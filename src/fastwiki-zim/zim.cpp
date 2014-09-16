@@ -320,18 +320,19 @@ int mylog(const char *fmt, ...)
 
 int Zim::zim_data_read(struct zim_tmp_title *st, char *title, char *redirect, char **data, int *ret_size, int flag)
 {
+	if (zim_title_read(st, title, redirect) == 0)
+		return 0;
+
+	return zim_data_sys_read(st, data, ret_size, flag);
+}
+
+int Zim::zim_data_sys_read(struct zim_tmp_title *st, char **data, int *ret_size, int flag)
+{
 	unsigned int size;
-	int t_size, done;
+	int t_size;
 	unsigned char blob_flag = 0;
 
-	done = zim_title_read(st, title, redirect);
-
 	read_total++;
-
-	//mylog("total = %d\n", read_total);
-
-	if (done == 0)
-		return 0;
 
 	if (zim_is_redirect(st))
 		return 1;

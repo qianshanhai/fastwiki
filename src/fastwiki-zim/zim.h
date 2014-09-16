@@ -80,6 +80,8 @@ class Zim {
 		int zim_data_read(struct zim_tmp_title *st, char *title, char *redirect,
 				char **data, int *ret_size, int flag);
 
+		int zim_data_sys_read(struct zim_tmp_title *st, char **data, int *ret_size, int flag);
+
 		int zim_done();
 
 	private:

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "q_util.h"
+#include "crc32sum.h"
 
 #include "wiki_math.h"
 #include "wiki_image.h"
@@ -32,6 +33,8 @@ static int m_chapter_count = 0;
 static int m_chapter_index[MAX_CHAPTER_INDEX + 1];
 
 static int m_split_math = 1;
+static int m_zh_flag = 0;
+static int m_is_wiki_complete = wiki_is_complete();
 
 static char m_lang[32];			/* -l */
 static char m_date[32]; 		/* -d */
@@ -65,6 +68,65 @@ static unsigned int m_convert_flag = ZIM_CONVERT_IMG | ZIM_CONVERT_TEXT | ZIM_CO
 		m_wiki_dict = new FastwikiDict(); \
 		m_wiki_dict->dict_init(m_lang, m_date, "gzip"); \
 	}
+
+struct title_key {
+	unsigned int crc32;
+	unsigned int r_crc32;
+};
+
+struct title_value {
+	unsigned char len;
+	char r[3];
+};
+
+static SHash *m_title_hash = NULL;
+
+static int init_title_hash()
+{
+	m_title_hash = new SHash();
+	m_title_hash->sh_init(30*10000, sizeof(struct title_key), sizeof(struct title_value));
+
+	return 0;
+}
+
+extern int mylog(const char *fmt, ...);
+
+static int add_title_hash(const char *title)
+{
+	struct title_key key;
+	struct title_value value;
+
+	memset(&key, 0, sizeof(key));
+	memset(&value, 0, sizeof(value));
+
+	value.len = strlen(title);
+	crc32sum(title, value.len, &key.crc32, &key.r_crc32);
+
+	m_title_hash->sh_replace(&key, &value);
+
+	mylog("title:%s\n", title);
+
+	return 0;
+}
+
+static int find_title_hash(const char *title)
+{
+	int len;
+	struct title_key key;
+	struct title_value *f;
+
+	memset(&key, 0, sizeof(key));
+
+	len = strlen(title);
+	crc32sum(title, len, &key.crc32, &key.r_crc32);
+
+	if (m_title_hash->sh_find(&key, (void **)&f) == _SHASH_FOUND) {
+		if (f->len == len)
+			return 1;
+	}
+
+	return 0;
+}
 
 static int zim_html_name_format(char *name)
 {
@@ -146,6 +208,23 @@ static int zim_parse_image_fname(char *fname, const char *from)
 		&& (15[p] == 'n' || 15[p] == 'N') && (16[p] == 'c' || 16[p] == 'C') && (17[p] == 'e' || 17[p] == 'E') \
 		&& (18[p] == 's' || 18[p] == 'S') && 19[p] == '>' )
 
+/* -{H|zh-cn: ..} */
+#define ZIM_IS_ZHCN(p) (0[p] == '-' && 1[p] == '{' && (2[p] == 'h' || 2[p] == 'H') && 3[p] == '|' \
+		&& (4[p] == 'z' || 4[p] == 'Z') && (5[p] == 'h' || 5[p] == 'H') && 6[p] == '-' \
+		&& (7[p] == 'c' || 7[p] == 'C') && (8[p] == 'n' || 8[p] == 'N') && 9[p] == ':')  
+
+
+/* -{H|zh-hans: ... } */
+#define ZIM_IS_ZHHANS(p) (0[p] == '-' && 1[p] == '{' && (2[p] == 'h' || 2[p] == 'H') \
+		&& 3[p] == '|' && (4[p] == 'z' || 4[p] == 'Z') && (5[p] == 'h' || 5[p] == 'H') \
+		&& 6[p] == '-' && (7[p] == 'h' || 7[p] == 'H') && (8[p] == 'a' || 8[p] == 'A') \
+		&& (9[p] == 'n' || 9[p] == 'N') && (10[p] == 's' || 10[p] == 'S') && 11[p] == ':') 
+
+/* -{H|zh-tw: ... } */
+#define ZIM_IS_ZHTW(p) (0[p] == '-' && 1[p] == '{' && (2[p] == 'h' || 2[p] == 'H') && 3[p] == '|' \
+		&& (4[p] == 'z' || 4[p] == 'Z') && (5[p] == 'h' || 5[p] == 'H') && 6[p] == '-' \
+		&& (7[p] == 't' || 7[p] == 'T') && (8[p] == 'w' || 8[p] == 'W') && 9[p] == ':')  
+
 static int zim_parse(char *page, int page_len, char *buf)
 {
 	char *p, *w, *w2, *title;
@@ -155,6 +234,20 @@ static int zim_parse(char *page, int page_len, char *buf)
 	int brace_total = 0;
 
 	for (int i = 0; i < page_len; i++) {
+		if (m_zh_flag == 1 && page[i] == '\n') {
+			do {
+				i++;
+				if (!(ZIM_IS_ZHCN(page + i) || ZIM_IS_ZHHANS(page + i) || ZIM_IS_ZHTW(page + i))) {
+					i--;
+					break;
+				}
+				for (; page[i] != '\n' && i < page_len; i++);
+			} while (i < page_len);
+
+			if (i >= page_len)
+				break;
+		}
+		
 #if 1
 		/* ignore many -{...}- */
 		if (page[i] == '-' && page[i + 1] == '{') {
@@ -354,6 +447,10 @@ static int zim_parse(char *page, int page_len, char *buf)
 						pos += p - (page + i);
 
 						flag = zim_parse_image_fname(fname, p + 1);
+
+						if ((int)m_max_total > 0)
+							add_title_hash(fname);
+
 						if (flag == 0) {
 							wm_math2fname(fname, strlen(fname), math);
 							pos += sprintf(buf + pos, "\"%s\" ", math);
@@ -381,6 +478,10 @@ static int zim_parse(char *page, int page_len, char *buf)
 						pos += p - (page + i);
 
 						flag = zim_parse_image_fname(fname, p);
+
+						if ((int)m_max_total > 0)
+							add_title_hash(fname);
+
 						if (flag == 0) {
 							wm_math2fname(fname, strlen(fname), math);
 							pos += sprintf(buf + pos, "\"%s\"%s", math, t ? ">" : " ");
@@ -458,7 +559,12 @@ int fz_add_page(struct zim_tmp_title *st, char *title, char *redirect, char *dat
 		memset(m_chapter_index, 0, sizeof(m_chapter_index));
 		tmp_start = BUF_START;
 
-		len = zim_parse(data, size, m_buf + BUF_START);
+		if (m_is_wiki_complete) {
+			memcpy(m_buf + BUF_START, data, size);
+			len = size;
+		} else {
+			len = zim_parse(data, size, m_buf + BUF_START);
+		}
 
 		if (m_chapter_size > 0) {
 			m_chapter_size += sprintf(m_chapter + m_chapter_size, "%s", "<hr align=left width=35%>\n");
@@ -520,7 +626,7 @@ int fz_test(const char *file)
 
 int usage(const char *name)
 {
-	printf("Version: %s, %s\n", _VERSION, __DATE__);
+	printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
 	printf("Author: qianshanhai\n"); 
 	printf("usage: fastwiki-zim <-l lang> <-d date> <-f zim_file> [-t max_total] [-a] [-i] [-m] [-z]\n");
 	printf( "       -l   language string. 'en', 'en_simple', etc.\n"
@@ -576,6 +682,8 @@ int fz_init_option(int argc, char **argv)
 				break;
 			case 'l':
 				strncpy(m_lang, optarg, sizeof(m_lang) - 1);
+				if (strncasecmp(m_lang, "zh", 2) == 0)
+					m_zh_flag = 1;
 				break;
 			case 'd':
 				strncpy(m_date, optarg, sizeof(m_date) - 1);
@@ -588,6 +696,7 @@ int fz_init_option(int argc, char **argv)
 				break;
 			case 't':
 				m_max_total = atoi(optarg);
+				init_title_hash();
 				break;
 
 			default: /* '?' */
@@ -640,9 +749,12 @@ int main(int argc, char *argv[])
 
 	m_zim->zim_data_reset();
 
+	int total_flag = 0;
+
 	for (;;) {
-		if (curr_total++ > m_max_total)
-			break;
+		if (curr_total++ > m_max_total) {
+			total_flag = 1;
+		}
 		if ((ret = m_zim->zim_data_read(&st, title, redirect, &data, &size, flag)) == 0)
 			break;
 		if (ret == -1 || ret == 2)
@@ -651,15 +763,20 @@ int main(int argc, char *argv[])
 		zim_html_name_format(title);
 		zim_html_name_format(redirect);
 
-		if (st.name_space == 'A' && (m_convert_flag & ZIM_CONVERT_TEXT)) {
+		if (total_flag == 0 && st.name_space == 'A' && (m_convert_flag & ZIM_CONVERT_TEXT)) {
 			CHECK_TEXT_IS_NEED();
 			fz_add_page(&st, title, redirect, data, size);
 			continue;
 		}
 
 		if (st.name_space == 'I') {
-			int flag = zim_parse_image_fname(fname, title);
-			if (flag == 0) {
+			int tmp = zim_parse_image_fname(fname, title);
+			if ((int)m_max_total > 0) {
+				if (!find_title_hash(fname))
+					continue;
+			}
+
+			if (tmp == 0) {
 				if (m_convert_flag & ZIM_CONVERT_MATH) {
 					CHECK_MATH_IS_NEED();
 					m_wiki_math->wm_zim_add_math(fname, data, size);
