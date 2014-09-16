@@ -6,7 +6,23 @@
 
 #include <stdio.h>
 
+#include "wiki_common.h"
+#include "wiki_data.h"
+#include "wiki_index.h"
+
 class FastwikiDict {
+	private:
+		WikiData *m_wiki_data;
+		WikiIndex *m_wiki_index;
+		int m_compress_flag;
+		compress_func_t m_compress_func;
+
+		char m_data_file[128];
+		char m_index_file[128];
+
+		char *m_out;
+		int m_out_len;
+
 	public:
 		FastwikiDict();
 		~FastwikiDict();

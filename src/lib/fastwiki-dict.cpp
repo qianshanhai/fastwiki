@@ -4,23 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "wiki_common.h"
-#include "wiki_data.h"
-#include "wiki_index.h"
-#include "gzip_compress.h"
-
 #include "fastwiki-dict.h"
-
-static WikiData *m_wiki_data = NULL;
-static WikiIndex *m_wiki_index = NULL;
-static int m_compress_flag = -1;
-static int (*m_compress_func)(char *out, int out_len, const char *in, int in_len);
-
-static char m_data_file[128];
-static char m_index_file[128];
-
-static char *m_out = NULL;
-static int m_out_len = 8*1024*1024;
 
 FastwikiDict::FastwikiDict()
 {
@@ -30,6 +14,7 @@ FastwikiDict::FastwikiDict()
 	m_compress_func = NULL;
 
 	m_out = NULL;
+	m_out_len = 8*1024*1024;
 }
 
 FastwikiDict::~FastwikiDict()
@@ -53,24 +38,6 @@ FastwikiDict::~FastwikiDict()
 	}
 }
 
-int get_compress_flag(const char *str)
-{
-	if (strcasecmp(str, "text") == 0 || strcasecmp(str, "txt") == 0)
-		return FM_FLAG_TEXT;
-	else if (strcasecmp(str, "bzip2") == 0) {
-		m_compress_func = bzip2;
-		return FM_FLAG_BZIP2;
-	} else if (strcasecmp(str, "gzip") == 0) {
-		m_compress_func = gzip;
-		return FM_FLAG_GZIP;
-	} else if (strcasecmp(str, "lz4") == 0) {
-		m_compress_func = lz4_compress;
-		return FM_FLAG_LZ4;
-	}
-
-	return -1;
-}
-
 /*
  * compress_flag: lz4, bzip2, gzip, text/txt
  */
@@ -79,7 +46,8 @@ int FastwikiDict::dict_init(const char *lang, const char *date, const char *comp
 	if ((m_out = (char *)malloc(m_out_len)) == NULL)
 		return -1;
 
-	if ((m_compress_flag = get_compress_flag(compress_flag)) == -1)
+	m_compress_func = get_compress_func(&m_compress_flag, compress_flag);
+	if (m_compress_flag == -1)
 		return -1;
 
 	sprintf(m_data_file, "fastwiki.dat.%s", lang);
