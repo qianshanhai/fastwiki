@@ -780,7 +780,7 @@ _Search3:
 }
 
 
-int LZ4_compressHC(const char* source, char* dest, int inputSize)
+int LZ4_compressHC(const char* source, char* dest, int inputSize, int max_out_size)
 {
     void* ctx = LZ4_createHC(source);
     int result;

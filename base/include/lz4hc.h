@@ -39,7 +39,7 @@ extern "C" {
 #endif
 
 
-int LZ4_compressHC (const char* source, char* dest, int inputSize);
+int LZ4_compressHC (const char* source, char* dest, int inputSize, int max_out_size);
 /*
 LZ4_compressHC :
     return : the number of bytes in compressed buffer dest
