@@ -63,8 +63,6 @@ typedef struct data_record_head {
 
 #define OUT_SIZE (3*1024*1024)
 
-typedef char fw_files_t[MAX_FD_TOTAL][128];
-
 class WikiData {
 	private:
 		FILE *m_data_fp;
