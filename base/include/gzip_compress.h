@@ -56,7 +56,7 @@ inline int lz4_compress(char *out, int out_len, const char *in, int in_len)
 {
 	int n;
 
-	return (n = LZ4_compressHC(in, out, in_len)) == 0 ? -1 : n;
+	return (n = LZ4_compressHC(in, out, in_len, out_len)) == 0 ? -1 : n;
 }
 
 inline int lz4_decompress(char *out, int out_len, const char *in, int in_len)
