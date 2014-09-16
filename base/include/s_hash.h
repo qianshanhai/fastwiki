@@ -38,13 +38,8 @@ private:
 	int key_len;
 	int hash_magic;
 
-	int count_same;
-
-	void *rec, *find, *used;
-	unsigned int crc32;
-
-	void *m_head;
-	unsigned int m_pos;
+	void *m_head;       /* for sh_fd_init_ro() */
+	unsigned int m_pos; /* same as m_head */
 
 	int fd;
 	int file_lock_flag;
@@ -67,7 +62,8 @@ private:
 
 	int sh_init_head(int flag);
 	int sh_extern_shm();
-	int sh_sys_find(const void *key, void **value);
+	int sh_sys_find(const void *key, void **value,
+			unsigned int *crc32, void **used, void **find);
 	int sh_sys_add(const void *key, const void *value, int flag, void **ret = NULL);
 	int sh_sys_delete(const void *key, int flag);
 	int sh_check_key_value_len(int total);
@@ -91,10 +87,10 @@ public:
 				shm_key_func_t _key, shm_add_func_t _add = NULL);
 	void sh_set_log_func(log_func_t lt = NULL);
 
-	int sh_find(const void *key, void **value = NULL);
+	int sh_find(const void *key, void **value = NULL, void **find = NULL);
 
-	int sh_begin();
-	int sh_next(const void *key, void **value);
+	int sh_begin(void **find);
+	int sh_next(void **find, const void *key, void **value);
 
 	int sh_add(const void *key, const void *value, void **ret = NULL);
 	int sh_replace(const void *key, const void *value, void **ret = NULL);

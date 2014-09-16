@@ -36,7 +36,7 @@ struct shm_hash_head {
 	int uptime;
 	int remalloc_flag;
 	int curr; /* used */
-	int total;
+	int hash_total;
 	int hash; /* == n */
 	int hash_used; /* */
 	int data; /* max_total */
@@ -93,8 +93,6 @@ struct shm_hash_head {
 
 #endif
 
-/** @endcond */
-
 /*
  * default compare function
  */
@@ -121,8 +119,6 @@ inline int _sh_key_func(SHM_KEY_ARG(type, key, len, new_key, ret_len))
 void SHash::sh_var_init()
 {
 	fd = -1;
-
-	rec = find = used = NULL;
 
 	log = printf;
 	value_len = key_len = 0;
@@ -157,7 +153,6 @@ SHash::~SHash()
 {
 	if (shm_flag & _SHASH_FD_FLAG) {
 		close(fd);
-		free(find);
 		free(m_head);
 		return;
 	}
@@ -210,7 +205,7 @@ int SHash::sh_fd_init_ro(int _fd, unsigned int pos)
 int SHash::sh_fd_find(const void *key, void *value)
 {
 	char buf[1024];
-	unsigned int next;
+	unsigned int next, crc32;
 	unsigned int hash_value = 0;
 	struct shm_hash_head *head = (struct shm_hash_head *)m_head;
 
@@ -507,9 +502,15 @@ int SHash::sh_destroy()
  * _SHASH_NOT_FOUND not found
  * _SHASH_FOUND     found
  */
-int SHash::sh_find(const void *key, void **value)
+int SHash::sh_find(const void *key, void **value, void **find)
 {
-	int n = sh_sys_find(key, value);
+	unsigned int crc32;
+	void *used, *f;
+
+	if (find == NULL)
+		find = &f;
+
+	int n = sh_sys_find(key, value, &crc32, &used, find);
 
 	if (n == _SHASH_NOT_FOUND_NEXT)
 		n = _SHASH_NOT_FOUND;
@@ -523,7 +524,8 @@ int SHash::sh_find(const void *key, void **value)
  * _SHASH_NOT_FOUND_NEXT
  * _SHASH_SYS_ERROR
  */
-int SHash::sh_sys_find(const void *key, void **value)
+int SHash::sh_sys_find(const void *key, void **value,
+		unsigned int *crc32, void **used, void **find)
 {
 	void *p;
 	unsigned int next;
@@ -533,33 +535,32 @@ int SHash::sh_sys_find(const void *key, void **value)
 
 	struct shm_hash_head *head = sh_get_head();
 
-	rec = sh_get_rec(head);
+	void *rec = sh_get_rec(head);
 
 	key_func(func_type, key, key_len, (void **)&new_key, &ret_len);
 	
-	crc32 = crc32sum((char *)new_key, ret_len) % head->hash;
-	hash = sh_get_hash(head) + crc32;
+	*crc32 = crc32sum((char *)new_key, ret_len) % head->hash;
+	hash = sh_get_hash(head) + *crc32;
 
 	if (*hash == 0) {
 		return _SHASH_NOT_FOUND;
 	}
 
-	find = p = sh_get_pos(rec, *hash);
-	used = NULL;
+	*find = p = sh_get_pos(rec, *hash);
+	*used = NULL;
 
 	for (;;) {
-		find = p;
-		count_same++;
+		*find = p;
 
-		if (sh_record_is_used(find)) {
+		if (sh_record_is_used(*find)) {
 			if (cmp_func(func_type, sh_get_key(p), key, key_len) == 0) {
 				if (value)
 					*value = sh_get_value(p);
 				return _SHASH_FOUND;
 			}
 		} else {
-			if (used == NULL)
-				used = find;
+			if (*used == NULL)
+				*used = *find;
 		}
 
 		if ((next = sh_get_next(p)) == 0)
@@ -587,25 +588,24 @@ int SHash::sh_replace(const void *key, const void *value, void **ret)
  */
 int SHash::sh_sys_add(const void *key, const void *value, int flag, void **ret)
 {
-	void *tmp;
+	void *tmp, *used, *find;
 	int *hash, n;
+	unsigned int crc32;
 	struct shm_hash_head *head;
 
-	count_same = 0;
-
-	n = sh_sys_find(key, &tmp);
+	n = sh_sys_find(key, &tmp, &crc32, &used, &find);
 
 	if (n == _SHASH_SYS_ERROR)
 		return -1;
 
 	head = sh_get_head();
-	rec = sh_get_rec(head);
+	void *rec = sh_get_rec(head);
 
 	if (head->curr >= head->data) {
 		if (sh_extern_shm() == -1) {
 			return _SHASH_SYS_ERROR;
 		}
-		return sh_sys_add(key, value, flag);
+		return sh_sys_add(key, value, flag, ret);
 	}
 
 	switch (n) {
@@ -619,15 +619,11 @@ int SHash::sh_sys_add(const void *key, const void *value, int flag, void **ret)
 			} else {
 				while (sh_get_next(find) > 0) {
 					find = sh_get_pos(rec, sh_get_next(find));
-					count_same++;
 				}
 			}
 		case _SHASH_NOT_FOUND_NEXT:
 
-			if (count_same > head->max_same)
-				head->max_same = count_same;
-
-			head->total++;
+			head->hash_total++;
 			if (used == NULL) {
 				head->curr++;
 				sh_set_next(find, head->curr);
@@ -647,7 +643,7 @@ int SHash::sh_sys_add(const void *key, const void *value, int flag, void **ret)
 			break;
 
 		case _SHASH_NOT_FOUND:
-			head->total++;
+			head->hash_total++;
 			head->curr++;
 			head->hash_used++;
 			hash = sh_get_hash(head);
@@ -689,13 +685,14 @@ int SHash::sh_delete_all(const void *key)
  */
 int SHash::sh_sys_delete(const void *key, int flag)
 {
-	void *value;
+	void *value, *used, *find;
 	int total = 0, n = 0;
+	unsigned int crc32;
 	struct shm_hash_head *head = sh_get_head();
 
-	rec = sh_get_rec(head);
+	void *rec = sh_get_rec(head);
 
- 	if ((n = sh_sys_find(key, &value)) == _SHASH_SYS_ERROR)
+ 	if ((n = sh_sys_find(key, &value, &crc32, &used, &find)) == _SHASH_SYS_ERROR)
 		return -1;
 
 	if (n == _SHASH_NOT_FOUND || n == _SHASH_NOT_FOUND_NEXT) {
@@ -708,7 +705,7 @@ int SHash::sh_sys_delete(const void *key, int flag)
 			if (value_len > 0)
 				memset(sh_get_value(find), 0, value_len);
 			sh_delete_a_record(find);
-			head->total--;
+			head->hash_total--;
 			total++;
 			if (flag == 0)
 				break;
@@ -721,9 +718,9 @@ int SHash::sh_sys_delete(const void *key, int flag)
 	return total;
 }
 
-int SHash::sh_begin()
+int SHash::sh_begin(void **find)
 {
-	find = NULL;
+	*find = NULL;
 
 	return 0;
 }
@@ -734,29 +731,29 @@ int SHash::sh_begin()
  * _SHASH_FOUND      found
  * _SHASH_SYS_ERROR  system error
  */
-int SHash::sh_next(const void *key, void **value)
+int SHash::sh_next(void **find, const void *key, void **value)
 {
-	if (find == NULL) 
-		return sh_find(key, value);
+	if (*find == NULL) 
+		return sh_find(key, value, find);
 
-	if (sh_get_next(find) == 0)
+	if (sh_get_next(*find) == 0)
 		return _SHASH_NOT_FOUND;
 
 	struct shm_hash_head *head = sh_get_head();
 
-	rec = sh_get_rec(head);
+	void *rec = sh_get_rec(head);
 
-	find = sh_get_pos(rec, sh_get_next(find));
+	*find = sh_get_pos(rec, sh_get_next(*find));
 
 	for (;;) {
-		if (sh_record_is_used(find) && cmp_func(func_type, sh_get_key(find), key, key_len) == 0) {
+		if (sh_record_is_used(*find) && cmp_func(func_type, sh_get_key(*find), key, key_len) == 0) {
 			if (value)
-				*value = sh_get_value(find);
+				*value = sh_get_value(*find);
 			return _SHASH_FOUND;
 		}
-		if (sh_get_next(find) == 0)
+		if (sh_get_next(*find) == 0)
 			break;
-		find = sh_get_pos(rec, sh_get_next(find));
+		*find = sh_get_pos(rec, sh_get_next(*find));
 	}
 
 	return _SHASH_NOT_FOUND;
@@ -817,7 +814,7 @@ int SHash::sh_read_next(void *key, void *value)
 	int n;
 	void *v;
 
-	if ((n = sh_read_next(key, &v)) == _SHASH_FOUND) {
+	if ((n = sh_read_next(key, (void **)&v)) == _SHASH_FOUND) {
 		if (value_len > 0 && value != NULL) {
 			memcpy(value, v, value_len);
 		}
@@ -833,7 +830,7 @@ int SHash::sh_read_next(void *key, void **value)
 	
 	head = sh_get_head();
 	_sh_check_head(head, _SHASH_SYS_ERROR);
-	rec = sh_get_rec(head);
+	void *rec = sh_get_rec(head);
 
 	for (;;) {
 		read_index++;
@@ -855,21 +852,19 @@ int SHash::sh_delete(const void *key, const void *value)
 {
 	int total = 0;
 	void *p, *real_key;
-	void *tmp_find = find;
+	void *find;
 	struct shm_hash_head *head = sh_get_head();
 
-	sh_begin();
+	sh_begin(&find);
 
-	while (sh_next(key, &p) == _SHASH_FOUND) {
+	while (sh_next(&find, key, &p) == _SHASH_FOUND) {
 		if (cmp_func(func_type, value, p, value_len) == 0) {
 			real_key = sh_get_key_from_value(p);
 			sh_delete_a_record(real_key);
-			head->total--;
+			head->hash_total--;
 			total++;
 		}
 	}
-
-	find = tmp_find;
 
 	return total;
 }
@@ -896,9 +891,12 @@ int SHash::sh_hash_total()
 {
 	struct shm_hash_head *head;
 
-	_sh_check_head(head, -1);
+	if (shm_flag == _SHASH_FD_FLAG)
+		head = (struct shm_hash_head *)m_head;
+	else
+		_sh_check_head(head, -1);
 
-	return head->total;
+	return head->hash_total;
 }
 
 int SHash::sh_clean()
@@ -907,7 +905,7 @@ int SHash::sh_clean()
 
 	_sh_check_head(head, -1);
 
-	head->hash_used = head->total = head->curr = 0;
+	head->hash_used = head->hash_total = head->curr = 0;
 
 	memset(sh_get_hash(head), 0, head->hash * sizeof(unsigned int));
 
@@ -927,7 +925,7 @@ int SHash::sh_random(void *key, void *value)
 	void *p;
 	struct shm_hash_head *head = sh_get_head();
 
-	rec = sh_get_rec(head);
+	void *rec = sh_get_rec(head);
 
 	for (int i = 0; i < 256; i++) {
 		int r = rand() % head->curr;
