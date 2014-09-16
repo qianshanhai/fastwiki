@@ -31,7 +31,7 @@ WikiSocket::WikiSocket()
 	m_start_flag = 0;
 	m_pthread_total = 0;
 
-	memset(m_host, 0, sizeof(m_host));
+	m_http = NULL;
 }
 
 WikiSocket::~WikiSocket()
@@ -50,6 +50,8 @@ void WikiSocket::ws_init(ws_wait_func_t wait_func, ws_do_url_t do_url, void *do_
 	m_wait_func = wait_func;
 	m_do_url = do_url;
 	m_do_url_class = do_url_class;
+
+	m_http = new HttpParse();
 }
 
 struct my_thread_arg {
@@ -74,8 +76,7 @@ extern "C" int LOG(const char *fmt, ...);
 
 int WikiSocket::ws_one_thread(int idx)
 {
-	char buf[4096], url[1024];
-	int n, sock;
+	int sock;
 
 	for (;;) {
 		sock = q_accept(m_bind_sock);
@@ -86,14 +87,8 @@ int WikiSocket::ws_one_thread(int idx)
 			}
 			break;
 		}
-		if ((n = q_read_data(sock, buf, sizeof(buf), 10*1000000)) > 0) {
-			buf[n] = 0;
-
-			if ((n = ws_parse_url(buf, url, sizeof(url))) > 0) {
-				url[n] = 0;
-				m_do_url(m_do_url_class, (void *)this, sock, url, idx);
-			}
-		}
+		m_http->hp_init(sock);
+		m_do_url(m_do_url_class, (void *)this, m_http, sock, idx);
 
 #ifdef WIN32
 		closesocket(sock);
@@ -159,55 +154,6 @@ int WikiSocket::ws_start_http_server(int pthread_total, bool flag)
 	m_start_flag = 1;
 
 	return 0;
-}
-
-const char *WikiSocket::ws_get_host()
-{
-	return m_host;
-}
-
-int WikiSocket::ws_parse_url(char *buf, char *url, int u_len)
-{
-	char *w, *p = buf;
-
-	url[0] = 0;
-
-#ifndef FW_NJI
-	if (m_host[0] == 0) {
-		for (char *t = p; *t; t++) {
-			if (strncasecmp(t, "Host:", 5) == 0) {
-				t += 5;
-				for (; *t == ' ' || *t == '\t' || *t == '/'; t++);
-				if ((w = strchr(t, '\n')) == NULL)
-					continue;
-				*w = 0;
-				if (w[-1] == '\r')
-					w[-1] = 0;
-				if (m_host[0] == 0) {
-					strncpy(m_host, t, sizeof(m_host) - 1);
-					break;
-				}
-			}
-		}
-	}
-#endif
-
-	if ((p = strstr(buf, "GET ")) == NULL)
-		return -1;
-
-	p += 4;
-
-	if ((w = strstr(p, " HTTP")) == NULL)
-		return -1;
-
-	*w = 0;
-
-	if (p[0] == '/' && p[1] != 0)
-		p++;
-
-	strncpy(url, p, u_len);
-
-	return w - p;
 }
 
 int WikiSocket::ws_http_output_head(int sock, int code, const char *type, int body_size)

@@ -4,12 +4,24 @@
 #ifndef __WIKI_SOCKET_H
 #define __WIKI_SOCKET_H
 
+#include "http_parse.h"
+
 #include <pthread.h>
 
 typedef void (*ws_wait_func_t)();
-typedef int (*ws_do_url_t)(void *_class, void *type, int sock, const char *url, int idx);
+typedef int (*ws_do_url_t)(void *_class, void *type, void *http, int sock, int idx);
 
 class WikiSocket {
+	private:
+		pthread_t m_id[128];
+		int m_start_flag;
+		int m_pthread_total;
+
+		void *m_do_url_class;
+		int ws_parse_url(char *buf, char *url, int u_len);
+
+		HttpParse *m_http;
+
 	public:
 		WikiSocket();
 		~WikiSocket();
@@ -23,17 +35,6 @@ class WikiSocket {
 		const char *ws_get_host();
 
 		int ws_get_server_status();
-
-	private:
-
-		pthread_t m_id[128];
-		int m_start_flag;
-		int m_pthread_total;
-		char m_host[128];
-
-		void *m_do_url_class;
-
-		int ws_parse_url(char *buf, char *url, int u_len);
 };
 
 #endif
