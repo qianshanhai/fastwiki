@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
+ */
+
 #include <string.h>
 #include <stdlib.h>
 
