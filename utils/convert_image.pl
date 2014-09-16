@@ -10,11 +10,29 @@ my $convert = "convert";   # must have this command
 my $m_x = 480;
 my $m_y = 800;
 
+sub usage {
+	print "usage: $0 <800x480> <todir> <files...>\n";
+	exit;
+}
+
+if (@ARGV != 3) {
+	usage();
+}
+
+my $xy = shift;
+
+($m_x, $m_y) = get_x_y($xy);
+
 $todir = shift;
 
 unless (-d $todir) {
-	print "usage: $0 <todir> <files...>\n";
-	exit;
+	usage();
+}
+
+sub get_x_y {
+	my $f = shift;
+	my @t = split /x/, $f;
+	return ($t[0], $t[1]);
 }
 
 for my $file (@ARGV) {
