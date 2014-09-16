@@ -18,7 +18,7 @@
 "			function http_get(s)\n" \
 "			{\n" \
 "				var xmlHttp = CreateAJAX();\n" \
-"				xmlHttp.open( \"GET\", \"http://%s/\" + s, false);\n" \
+"				xmlHttp.open( \"GET\", \"/\" + s, false);\n" \
 "				xmlHttp.send(null);\n" \
 "				return xmlHttp.responseText;\n" \
 "			}\n" \
@@ -50,6 +50,12 @@
 "			function get_data(va)\n" \
 "			{\n" \
 "				var s;\n" \
+"				if (this.f1.ft.checked) {\n" \
+"					$(\"test\").style.border = \"solid 0px black\";\n" \
+"					$(\"test\").style.display = \"none\"; \n" \
+"					$(\"test\").innerHTML = \"\";\n" \
+"					return;\n" \
+"				}\n" \
 "\n" \
 "				va = $(\"in1\").value;\n" \
 "\n" \
@@ -62,12 +68,17 @@
 "				$(\"test\").style.display = \"block\"; \n" \
 "				$(\"test\").style.border = \"solid 1px black\";\n" \
 "				\n" \
-"				s = http_get(\"F:\" + va);\n" \
+"				s = http_get(\"match?key=\" + va);\n" \
 "				$(\"test\").innerHTML = s;\n" \
 "			}\n" \
 "\n" \
 "			function _submit()\n" \
 "			{\n" \
+"				if (this.f1.ft.checked) {\n" \
+"					document.location = \"/search?key=\" + $(\"in1\").value + \"&ft=on\";\n" \
+"					return;\n" \
+"				}\n" \
+"\n" \
 "				get_data($(\"in1\").value);\n" \
 "			}\n" \
 "\n" \
@@ -88,15 +99,18 @@
 "					$(\"test\").style.border = \"solid 0px black\";\n" \
 "					$(\"test\").style.display = \"none\"; \n" \
 "				}\n" \
-"			}\n" \
+"			};\n" \
+"\n" \
 "		</script>\n" \
 "	</head>\n" \
 "	<body>\n" \
-"		<form method=GET name=f1>\n" \
+"		<form method=GET action=search name=f1>\n" \
 "			<table border=0>\n" \
 "				<tr><td> Fastwiki: </td>\n" \
-"					<td><input id=in1 type=text name=K autocomplete=\"off\" size=40 >\n" \
-"						<input type=button onclick=\"_submit()\" value=submit> <br/>\n" \
+"					<td><input id=in1 type=text name=key autocomplete=\"off\" size=40 >\n" \
+"						<input type=button onclick=\"_submit()\" value=submit> \n" \
+"						(Full Text Search: <input type=\"checkbox\" name=ft %s />)\n" \
+"						<br/>\n" \
 "					</td>\n" \
 "				</tr>\n" \
 "				<tr><td>&nbsp;</td>\n" \
@@ -105,13 +119,14 @@
 "					</td>\n" \
 "				</tr>\n" \
 "			</table>\n" \
+"		</form>\n" \
 "\n" \
-"			<div id=main>\n" \
+"		<div id=main>\n" \
 
 
 #define HTTP_END_HTML \
-"			</div>\n" \
-"		</form>\n" \
+"		</div>\n" \
+"\n" \
 "		<script language=javascript>\n" \
 "			/*\n" \
 "			if (navigator.userAgent.indexOf(\"MSIE\") > 0){\n" \
@@ -120,9 +135,10 @@
 "				};\n" \
 "			}\n" \
 "			*/\n" \
-"				$('in1').oninput = function(){\n" \
-"					get_data(this.value);\n" \
-"				};\n" \
+"\n" \
+"			$('in1').oninput = function(){\n" \
+"				get_data(this.value);\n" \
+"			};\n" \
 "\n" \
 "			$('in1').value = \"%s\";\n" \
 "		</script>\n" \

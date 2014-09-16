@@ -14,7 +14,7 @@
 			function http_get(s)
 			{
 				var xmlHttp = CreateAJAX();
-				xmlHttp.open( "GET", "http://%s/" + s, false);
+				xmlHttp.open( "GET", "/" + s, false);
 				xmlHttp.send(null);
 				return xmlHttp.responseText;
 			}
@@ -46,6 +46,12 @@
 			function get_data(va)
 			{
 				var s;
+				if (this.f1.ft.checked) {
+					$("test").style.border = "solid 0px black";
+					$("test").style.display = "none"; 
+					$("test").innerHTML = "";
+					return;
+				}
 
 				va = $("in1").value;
 
@@ -58,12 +64,17 @@
 				$("test").style.display = "block"; 
 				$("test").style.border = "solid 1px black";
 				
-				s = http_get("F:" + va);
+				s = http_get("match?key=" + va);
 				$("test").innerHTML = s;
 			}
 
 			function _submit()
 			{
+				if (this.f1.ft.checked) {
+					document.location = "/search?key=" + $("in1").value + "&ft=on";
+					return;
+				}
+
 				get_data($("in1").value);
 			}
 
@@ -84,15 +95,18 @@
 					$("test").style.border = "solid 0px black";
 					$("test").style.display = "none"; 
 				}
-			}
+			};
+
 		</script>
 	</head>
 	<body>
-		<form method=GET name=f1>
+		<form method=GET action=search name=f1>
 			<table border=0>
 				<tr><td> Fastwiki: </td>
-					<td><input id=in1 type=text name=K autocomplete="off" size=40 >
-						<input type=button onclick="_submit()" value=submit> <br/>
+					<td><input id=in1 type=text name=key autocomplete="off" size=40 >
+						<input type=button onclick="_submit()" value=submit> 
+						(Full Text Search: <input type="checkbox" name=ft %s />)
+						<br/>
 					</td>
 				</tr>
 				<tr><td>&nbsp;</td>
@@ -101,11 +115,12 @@
 					</td>
 				</tr>
 			</table>
-
-			<div id=main>
-				SPLIT
-			</div>
 		</form>
+
+		<div id=main>
+		SPLIT
+		</div>
+
 		<script language=javascript>
 			/*
 			if (navigator.userAgent.indexOf("MSIE") > 0){
@@ -114,9 +129,10 @@
 				};
 			}
 			*/
-				$('in1').oninput = function(){
-					get_data(this.value);
-				};
+
+			$('in1').oninput = function(){
+				get_data(this.value);
+			};
 
 			$('in1').value = "%s";
 		</script>
