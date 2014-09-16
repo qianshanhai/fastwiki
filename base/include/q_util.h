@@ -120,4 +120,7 @@ int q_msleep(int msec);
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 #endif
 
+unsigned char q_hex(char ch);
+unsigned char q_hex2ch(const char *buf);
+
 #endif

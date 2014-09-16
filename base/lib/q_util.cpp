@@ -489,3 +489,31 @@ ssize_t pread(int fd, void *buf, size_t count, off_t offset)
 }
 
 #endif
+
+unsigned char q_hex(char ch)
+{
+	unsigned char x = 0;
+
+	if (ch >= 'a' && ch <= 'f')
+		x = ch - 'a' + 10;
+	else if (ch >= 'A' && ch <= 'F')
+		x = ch - 'A' + 10;
+	else if (ch >= '0' && ch <= '9')
+		x = ch - '0';
+
+	return x;
+}
+
+unsigned char q_hex2ch(const char *buf)
+{
+	unsigned char x, y;
+
+	if (buf[0] == 0 || buf[1] == 0)
+		return 0;
+
+	x = q_hex(buf[0]);
+	y = q_hex(buf[1]);
+	x = x * 16 + y;
+
+	return (unsigned char)x;
+}
