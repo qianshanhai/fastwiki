@@ -8,6 +8,18 @@
 #include "wiki_common.h"
 #include "q_util.h"
 
+#include "gzip_compress.h"
+
+int wiki_pthread_total()
+{
+	char *p = getenv("WIKI_PTHREAD");
+
+	if (p == NULL || atoi(p) <= 0)
+		return q_get_cpu_total();
+
+	return atoi(p);
+}
+
 int wiki_is_dont_ask()
 {
 	char *env = getenv("DONT_ASK");
@@ -132,7 +144,6 @@ unsigned char hex2ch(const char *buf)
 
 int ch2hex(const char *s, unsigned char *buf)
 {
-	char ch;
 	int pos = 0;
 
 	for (; *s; s++) {
@@ -204,3 +215,44 @@ int init_texvc_file()
 	return -1;
 }
 
+compress_func_t get_compress_func(int *flag, const char *str)
+{
+	if (strcasecmp(str, "text") == 0 || strcasecmp(str, "txt") == 0) {
+		*flag = FM_FLAG_TEXT;
+		return NULL;
+	} else if (strcasecmp(str, "bzip2") == 0) {
+		*flag = FM_FLAG_BZIP2;
+		return bzip2;
+	} else if (strcasecmp(str, "gzip") == 0) {
+		*flag = FM_FLAG_GZIP;
+		return gzip;
+	} else if (strcasecmp(str, "lz4") == 0) {
+		*flag = FM_FLAG_LZ4;
+		return lz4_compress;
+	}
+
+	*flag = -1;
+
+	return NULL;
+}
+
+compress_func_t get_decompress_func(int z_flag)
+{
+	compress_func_t ret = NULL;
+
+	switch (z_flag) {
+		case FM_FLAG_BZIP2:
+			ret = bunzip2;
+			break;
+		case FM_FLAG_GZIP:
+			ret = gunzip;
+			break;
+		case FM_FLAG_LZ4:
+			ret = lz4_decompress;
+			break;
+		default:
+			break;
+	}
+
+	return ret;
+}

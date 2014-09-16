@@ -11,15 +11,21 @@ enum {
 	FM_FLAG_LZ4 = 0x80
 };
 
+#define MAX_FD_TOTAL 64
+
+typedef int (*compress_func_t)(char *out, int out_len, const char *in, int in_len);
+typedef char fw_files_t[MAX_FD_TOTAL][128]; 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define MAX_FD_TOTAL 32
+int wiki_pthread_total();
 
 int wiki_is_dont_ask();
 int wiki_is_mutil_output();
 int wiki_is_complete();
+
 void set_wiki_split_size(unsigned int m);
 unsigned int wiki_split_size();
 
@@ -34,6 +40,9 @@ char *url_convert(char *buf);
 
 char *get_texvc_file();
 int init_texvc_file();
+
+compress_func_t get_compress_func(int *flag, const char *str);
+compress_func_t get_decompress_func(int z_flag);
 
 #ifdef __cplusplus
 };
