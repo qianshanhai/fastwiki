@@ -33,7 +33,7 @@ else
 libbase = libbase.a
 endif
 
-inc += -I../include
+inc += -I../include -I../minilzo
 #cppflag += -fPIC
 
 .SUFFIXES: .o .c .cpp
