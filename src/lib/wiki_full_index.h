@@ -148,6 +148,7 @@ class WikiFullIndex {
 		int m_curr_flush_fd_idx;
 
 		compress_func_t m_compress_func;
+
 		int m_z_flag;
 
 	public:
@@ -166,9 +167,9 @@ class WikiFullIndex {
 		int wfi_tmp_get_max_k(struct wfi_tmp_max *m, int k);
 
 		int wfi_update_one_bitmap(unsigned int idx, unsigned char *bitmap);
-		int wfi_update_one_bitmap_to_file(struct fidx_value *f, struct wfi_tmp_value *v);
+		int wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f);
 		int wfi_flush_one_data(struct wfi_tmp_key *k, struct wfi_tmp_value *v);
-		int wfi_new_flush_record(struct fidx_value *v);
+		int wfi_write_one_bitmap_to_file(const void *buf, int len, struct fidx_value *v);
 
 		int wfi_flush_some_data();
 		int wfi_flush_all_data();

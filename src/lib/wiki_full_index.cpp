@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+#include "q_log.h"
 #include "q_util.h"
 
 #include "wiki_full_index.h"
@@ -178,6 +179,7 @@ int WikiFullIndex::wfi_create_init(const char *z_flag, int index_total, const ch
 
 	m_bitmap = (unsigned char *)malloc(m_bitmap_size);
 	m_tmp_buf = (unsigned char *)malloc(m_comp_buf_len);
+	m_comp_buf = (char *)malloc(m_comp_buf_len);
 
 	m_page_index_pos = 0;
 	m_page_index = (int *)malloc(_wfi_page_index_size());
@@ -192,6 +194,8 @@ int WikiFullIndex::wfi_create_init(const char *z_flag, int index_total, const ch
 	wfi_init_tmp_mem(mem_size);
 
 	m_compress_func = get_compress_func(&m_z_flag, z_flag);
+	m_decompress_func = get_decompress_func(m_z_flag);
+
 	if (m_z_flag == -1)
 		return -1;
 
@@ -210,10 +214,10 @@ int WikiFullIndex::wfi_init_tmp_mem(size_t mem_size)
 				+ m_tmp_head->max_total * sizeof(unsigned int));
 
 	m_tmp_hash = new SHash();
-	m_tmp_hash->sh_init(30*10000, sizeof(struct wfi_tmp_key), sizeof(struct wfi_tmp_value));
+	m_tmp_hash->sh_init(500*10000, sizeof(struct wfi_tmp_key), sizeof(struct wfi_tmp_value));
 
 	m_flush_hash = new SHash();
-	m_flush_hash->sh_init(30*10000, sizeof(struct fidx_key), sizeof(fidx_value));
+	m_flush_hash->sh_init(100*10000, sizeof(struct fidx_key), sizeof(fidx_value));
 
 	for (int i = 0; i < m_pthread_total; i++) {
 		m_key_hash[i] = new SHash();
@@ -358,7 +362,10 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 
 int WikiFullIndex::wfi_add_page_done()
 {
-	wfi_flush_all_data();
+	if (wfi_flush_all_data() == -1) {
+		LOG("wfi_flush_all_data() error\n");
+		return -1;
+	}
 	wfi_flush_full_index();
 
 	return 0;
@@ -401,6 +408,15 @@ int WikiFullIndex::wfi_delete_tmp_rec(unsigned int start_idx)
 	return 0;
 }
 
+#define _wfi_check_new_tmp_rec(_last_rec_idx, _last_rec_idx_addr) \
+	do { \
+		if (wfi_new_tmp_rec(_last_rec_idx, page_idx, _last_rec_idx_addr) == -1) { \
+			if (wfi_flush_some_data() == -1) \
+				return -1; \
+			return wfi_add_one_word(word, page_idx); \
+		} \
+	} while (0)
+
 int WikiFullIndex::wfi_add_one_word(const char *word, int page_idx)
 {
 	struct wfi_tmp_key key;
@@ -412,21 +428,20 @@ int WikiFullIndex::wfi_add_one_word(const char *word, int page_idx)
 	q_tolower(key.word);
 
 	if (m_tmp_hash->sh_find(&key, (void **)&f) == _SHASH_FOUND) {
-		struct wfi_tmp_rec *r = &m_tmp_rec[f->last_rec_idx];
-		if (r->total < _MAX_TMP_PAGE_IDX_TOTAL) {
-			r->page_idx[r->total++] = page_idx;
+		if (f->total == 0) {
+			_wfi_check_new_tmp_rec(0, &f->last_rec_idx);
+			f->start_rec_idx = f->last_rec_idx;
 		} else {
-			if (wfi_new_tmp_rec(f->last_rec_idx, page_idx, &f->last_rec_idx) == -1) {
-				wfi_flush_some_data();
-				return wfi_add_one_word(word, page_idx);
+			struct wfi_tmp_rec *r = &m_tmp_rec[f->last_rec_idx];
+			if (r->total < _MAX_TMP_PAGE_IDX_TOTAL) {
+				r->page_idx[r->total++] = page_idx;
+			} else {
+				_wfi_check_new_tmp_rec(f->last_rec_idx, &f->last_rec_idx);
 			}
 		}
 		f->total++;
 	} else {
-		if (wfi_new_tmp_rec(0, page_idx, &value.last_rec_idx) == -1) {
-			wfi_flush_some_data();
-			return wfi_add_one_word(word, page_idx);
-		}
+		_wfi_check_new_tmp_rec(0, &value.last_rec_idx);
 
 		value.total = 1;
 		value.start_rec_idx = value.last_rec_idx;
@@ -474,7 +489,10 @@ int WikiFullIndex::wfi_flush_some_data()
 		if (p->v == NULL || p->v->total == 0)
 			continue;
 
-		wfi_flush_one_data(&p->key, p->v);
+		if (wfi_flush_one_data(&p->key, p->v) == -1) {
+			LOG("wfi_flush_one_data() error\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -499,41 +517,31 @@ int WikiFullIndex::wfi_update_one_bitmap(unsigned int idx, unsigned char *bitmap
 	return 0;
 }
 
-int WikiFullIndex::wfi_update_one_bitmap_to_file(struct fidx_value *f, struct wfi_tmp_value *v)
-{
-	int fd = m_flush_fd[f->file_idx];
-
-	lseek(fd, f->pos, SEEK_SET);
-
-	if (read(fd, m_bitmap, m_bitmap_size) != m_bitmap_size)
-		memset(m_bitmap, 0, m_bitmap_size);
-
-	wfi_update_one_bitmap(v->start_rec_idx, m_bitmap);
-
-	lseek(fd, f->pos, SEEK_SET);
-	if (write(fd, m_bitmap, m_bitmap_size) != m_bitmap_size)
-		return -1;
-
-	wfi_delete_tmp_rec(v->start_rec_idx);
-	memset(v, 0, sizeof(struct wfi_tmp_value));
-
-	return 0;
-}
-
 int WikiFullIndex::wfi_flush_one_data(struct wfi_tmp_key *k, struct wfi_tmp_value *v)
 {
+	int n;
 	struct fidx_key key;
-	struct fidx_value *f, value;
+	struct fidx_value value;
 
 	memcpy(&key, k, sizeof(key));
 
-	if (m_flush_hash->sh_find(&key, (void **)&f) != _SHASH_FOUND) {
-		wfi_new_flush_record(&value);
-		m_flush_hash->sh_add(&key, &value);
-		f = &value;
+	memset(m_bitmap, 0, m_bitmap_size);
+	wfi_update_one_bitmap(v->start_rec_idx, m_bitmap);
+
+	if ((n = m_compress_func((char *)m_tmp_buf, m_comp_buf_len, (char *)m_bitmap, m_bitmap_size)) == -1) {
+		LOG("compress error: m_bitmap_size = %d\n", m_bitmap_size);
+		return -1;
 	}
 
-	wfi_update_one_bitmap_to_file(f, v);
+	if (wfi_write_one_bitmap_to_file(m_tmp_buf, n, &value) == -1) {
+		LOG("wfi_write_one_bitmap_to_file error\n");
+		return -1;
+	}
+
+	m_flush_hash->sh_add(&key, &value);
+
+	wfi_delete_tmp_rec(v->start_rec_idx);
+	memset(v, 0, sizeof(struct wfi_tmp_value));
 
 	return 0;
 }
@@ -543,30 +551,34 @@ int WikiFullIndex::wfi_flush_one_data(struct wfi_tmp_key *k, struct wfi_tmp_valu
 #define _wfi_set_fidx_tmp_fname(_buf, _idx) \
 		sprintf(_buf, "%s/fastwiki.full.index.tmp.%d", m_tmp_dir, _idx)
 
-int WikiFullIndex::wfi_new_flush_record(struct fidx_value *v)
+int WikiFullIndex::wfi_write_one_bitmap_to_file(const void *buf, int len, struct fidx_value *v)
 {
 	int fd;
 	char file[256];
-
-	memset(v, 0, sizeof(struct fidx_value));
 
 	if (m_curr_flush_fd_idx == -1 || m_flush_size[m_curr_flush_fd_idx] >= _WFI_MAX_FLUSH_FILE_SIZE) {
 		m_curr_flush_fd_idx++;
 
 		_wfi_set_fidx_tmp_fname(file, m_curr_flush_fd_idx);
 
-		if ((fd = open(file, O_RDWR | O_CREAT | O_BINARY | O_TRUNC, 0644)) == -1)
+		if ((fd = open(file, O_RDWR | O_CREAT | O_BINARY | O_TRUNC | O_APPEND, 0644)) == -1) {
+			LOG("open file %s to write error: %s\n", file, strerror(errno));
 			return -1;
+		}
 
 		m_flush_fd[m_curr_flush_fd_idx] = fd;
 		m_flush_size[m_curr_flush_fd_idx] = 0;
 	}
 
+	memset(v, 0, sizeof(struct fidx_value));
+
 	v->file_idx = m_curr_flush_fd_idx;
 	v->pos = m_flush_size[m_curr_flush_fd_idx];
-	v->len = m_bitmap_size;
+	v->len = len;
 
-	m_flush_size[m_curr_flush_fd_idx] += m_bitmap_size;
+	m_flush_size[m_curr_flush_fd_idx] += len;
+
+	write(m_flush_fd[m_curr_flush_fd_idx], buf, len);
 
 	return 0;
 }
@@ -575,7 +587,8 @@ int WikiFullIndex::wfi_flush_all_data()
 {
 	struct wfi_tmp_key key;
 	struct wfi_tmp_value *v;
-	struct fidx_value *f;
+	struct fidx_value *f, value;
+	void *tmp_find;
 
 	int fd = -1, curr_fd_idx = -1;
 	unsigned int curr_pos = sizeof(struct fidx_head);
@@ -593,16 +606,20 @@ int WikiFullIndex::wfi_flush_all_data()
 			fd = wfi_new_index_file(curr_fd_idx);
 			curr_pos = sizeof(struct fidx_head);
 		}
-		if (m_flush_hash->sh_find(&key, (void **)&f) == _SHASH_FOUND) {
-			lseek(m_flush_fd[f->file_idx], f->pos, SEEK_SET);
-			read(m_flush_fd[f->file_idx], m_bitmap, f->len);
-		} else {
-			memset(m_bitmap, 0, m_bitmap_size);
-		}
+
+		memset(m_bitmap, 0, m_bitmap_size);
+
 		if (v->total > 0) {
 			wfi_update_one_bitmap(v->start_rec_idx, m_bitmap);
 		}
-		struct fidx_value value;
+
+		m_flush_hash->sh_begin(&tmp_find);
+		while (m_flush_hash->sh_next(&tmp_find, &key, (void **)&f) == _SHASH_FOUND) {
+			if (wfi_read_file_to_one_bitmap(m_bitmap, m_bitmap_size, f) == -1) {
+				LOG("wfi_read_file_to_one_bitmap error\n");
+				return -1;
+			}
+		}
 
 		memset(&value, 0, sizeof(value));
 
@@ -617,6 +634,31 @@ int WikiFullIndex::wfi_flush_all_data()
 	}
 
 	close(fd);
+
+	return 0;
+}
+
+int WikiFullIndex::wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f)
+{
+	int n;
+	unsigned long long *bitmap = (unsigned long long *)buf;
+	unsigned long long *tmp = (unsigned long long *)m_comp_buf;
+
+	lseek(m_flush_fd[f->file_idx], f->pos, SEEK_SET);
+
+	if ((n = read(m_flush_fd[f->file_idx], m_tmp_buf, f->len)) != (int)f->len) {
+		LOG("read tmp file data error: len=%d, but just read: %d\n", f->len, n);
+		return -1;
+	}
+
+	if ((n = m_decompress_func((char *)m_comp_buf, m_comp_buf_len, (char *)m_tmp_buf, f->len)) == -1) {
+		LOG("decompress error: len=%d\n", f->len);
+		return -1;
+	}
+
+	for (int i = 0; i < m_bitmap_size / 8; i++) {
+		bitmap[i] |= tmp[i];
+	}
 
 	return 0;
 }
@@ -665,8 +707,10 @@ int WikiFullIndex::wfi_flush_full_index()
 	char tmp_file[] = ".tmp.fw.fidx";
 	struct fidx_head head;
 
-	if ((fd = open(tmp_file, O_RDWR | O_CREAT | O_BINARY | O_TRUNC, 0644)) == -1)
+	if ((fd = open(tmp_file, O_RDWR | O_CREAT | O_BINARY | O_TRUNC, 0644)) == -1) {
+		LOG("open tmp file %s to write error: %s\n", tmp_file, strerror(errno));
 		return -1;
+	}
 
 	memset(&head, 0, sizeof(head));
 
@@ -700,8 +744,10 @@ int WikiFullIndex::wfi_flush_full_index()
 
 	wfi_get_fidx_fname(file, m_lang, 0);
 
-	if ((fd2 = open(file, O_RDONLY)) == -1)
+	if ((fd2 = open(file, O_RDONLY)) == -1) {
+		LOG("read file %s error: %s\n", file, strerror(errno));
 		return -1;
+	}
 
 	while ((n = read(fd2, m_tmp_buf, m_bitmap_size)) > 0)
 		write(fd, m_tmp_buf, n);
