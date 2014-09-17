@@ -24,6 +24,8 @@ libs = -static -L$(root)/lib -L$(libbase_lib) -static -L$(MINGW_LIB) -lpthreadGC
 # export MINGW_LIB=/c/MinGW/lib
 endif
 
+libs += -L$(root)/../base/minilzo -lfwminilzo
+
 inc = -I. -D_FASTWIKI_BIN_ -I$(root)/lib -I$(libbase_inc)
 
 ifeq ($(USE_STARDICT_PERL), 1)
