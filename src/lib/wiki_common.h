@@ -8,7 +8,8 @@ enum {
 	FM_FLAG_TEXT = 0x10,
 	FM_FLAG_BZIP2 = 0x20,
 	FM_FLAG_GZIP = 0x40,
-	FM_FLAG_LZ4 = 0x80
+	FM_FLAG_LZ4 = 0x80,
+	FM_FLAG_LZO1X = 0x100
 };
 
 #define MAX_FD_TOTAL 64

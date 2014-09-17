@@ -229,6 +229,11 @@ compress_func_t get_compress_func(int *flag, const char *str)
 	} else if (strcasecmp(str, "lz4") == 0) {
 		*flag = FM_FLAG_LZ4;
 		return lz4_compress;
+	} else if (strcasecmp(str, "lzo1x") == 0) {
+#ifndef FW_NJI
+		*flag = FM_FLAG_LZO1X;
+		return lzo1x_compress;
+#endif
 	}
 
 	*flag = -1;
@@ -250,6 +255,11 @@ compress_func_t get_decompress_func(int z_flag)
 		case FM_FLAG_LZ4:
 			ret = lz4_decompress;
 			break;
+#ifndef FW_NJI
+		case FM_FLAG_LZO1X:
+			ret = lzo1x_decompress;
+			break;
+#endif
 		default:
 			break;
 	}
