@@ -1,6 +1,9 @@
 /*
  * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
  */
+
+#ifndef FW_NJI
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -78,3 +81,5 @@ int LZO1X::data_len(const char *p)
 
 	return atoi(buf);
 }
+
+#endif

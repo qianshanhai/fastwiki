@@ -5,6 +5,8 @@
 #ifndef __FASTWIKI_LZO1X_H
 #define __FASTWIKI_LZO1X_H
 
+#ifndef FW_NJI
+
 class LZO1X {
 	private:
 		void *wrkmem;
@@ -20,5 +22,6 @@ class LZO1X {
 		int data_len(const char *p);
 };
 
+#endif
 
 #endif
