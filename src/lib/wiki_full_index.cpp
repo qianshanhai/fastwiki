@@ -83,12 +83,11 @@ int WikiFullIndex::wfi_find(const char *string, int *page_idx, int max_total)
 	split_t sp;
 	struct fidx_key key;
 	struct fidx_value value;
-	int find_flag, real_total = 0;
+	int once = 0, find_flag, real_total = 0;
 
 	unsigned long long *bitmap = (unsigned long long *)m_bitmap;
 	unsigned long long *comp_buf = (unsigned long long *)m_comp_buf;
 
-	memset(bitmap, 0, m_head.bitmap_size);
 
 	if (m_ro_init_flag == 0)
 		return 0;
@@ -113,8 +112,9 @@ int WikiFullIndex::wfi_find(const char *string, int *page_idx, int max_total)
 		if (len != m_head.bitmap_size)
 			return -1; /* 文件可能已经损坏 */
 
-		if (sp.I == 0) {
-			memcpy(bitmap, comp_buf, len);
+		if (once == 0) {
+			once = 1;
+			memcpy(m_bitmap, m_comp_buf, len);
 			continue;
 		}
 
@@ -124,7 +124,6 @@ int WikiFullIndex::wfi_find(const char *string, int *page_idx, int max_total)
 			bitmap[j] &= comp_buf[j];
 			if (bitmap[j]) {
 				find_flag = 1;
-				break;
 			}
 		}
 
@@ -254,7 +253,7 @@ int WikiFullIndex::wfi_init_tmp_mem(size_t mem_size)
 #define _WFI_CHECK_WORD_10(p) (_WFI_CHECK_WORD_1(p) && _WFI_CHECK_WORD_9(p + _WFI_CHECK_WORD_LEN))
 
 #define _WFI_CHECK_ALL_WORD(p, x) \
-	if (_WFI_CHECK_WORD_##x(p)) { \
+	if (i + x * _WFI_CHECK_WORD_LEN < page_len && _WFI_CHECK_WORD_##x(p)) { \
 		_WFI_ADD_PAGE_CHECK_POS(); \
 		memset(&key, 0, sizeof(key)); \
 		strncpy(key.word, p, x * _WFI_CHECK_WORD_LEN); \
@@ -414,7 +413,7 @@ int WikiFullIndex::wfi_add_one_word(const char *word, int page_idx)
 
 	if (m_tmp_hash->sh_find(&key, (void **)&f) == _SHASH_FOUND) {
 		struct wfi_tmp_rec *r = &m_tmp_rec[f->last_rec_idx];
-		if (r->total < _MAX_TMP_PAGE_IDX_TOTAL - 1) {
+		if (r->total < _MAX_TMP_PAGE_IDX_TOTAL) {
 			r->page_idx[r->total++] = page_idx;
 		} else {
 			if (wfi_new_tmp_rec(f->last_rec_idx, page_idx, &f->last_rec_idx) == -1) {
