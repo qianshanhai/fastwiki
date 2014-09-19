@@ -125,8 +125,8 @@
 "	<br/>\n" \
 "		<form method=GET action=search name=f1>\n" \
 "			<table border=0>\n" \
-"				<tr><td width=130px align=right> <font size=5 color=blue><b>Fastwiki</b></font>&nbsp;</td>\n" \
-"					<td width=500px><input id=in1 type=text name=key autocomplete=\"off\" size=50 >\n" \
+"				<tr><td width=130px align=right><a href='https://fastwiki.me'><img src=/logo.png />&nbsp;</td>\n" \
+"					<td width=500px align=left><input id=in1 type=text name=key autocomplete=\"off\" size=50 >\n" \
 "						<input type=button onclick=\"_submit()\" value=submit />\n" \
 "					</td>\n" \
 "					<td>\n" \
@@ -134,14 +134,9 @@
 "						Show All: <input type=\"checkbox\" onclick=\"check_show();\" name=showall %s /> \n" \
 "					</td>\n" \
 "				</tr>\n" \
-"				<tr><td width=130px>&nbsp;</td>\n" \
-"					<td width=500px>\n" \
-"						<div id=test class=xx style=\"display:block;position:absolute;\"></div>\n" \
-"					</td>\n" \
-"					<td> &nbsp; </td>\n" \
-"				</tr>\n" \
 "			</table>\n" \
 "		</form>\n" \
+"		<div id=test class=xx style=\"display:block;position:absolute; margin-left: 135px; width: 420px;\"></div>\n" \
 "\n" \
 "		<div id=main style=\"margin-left: 130px; width: 600px;\">\n" \
 

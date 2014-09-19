@@ -86,10 +86,19 @@ int HttpdIndex::hi_fetch(const char *key, int *page, int *page_idx, int *all_tot
 {
 	int n;
 	unsigned int crc32;
-	char file[128], dir[256];
+	char file[128], dir[256], word[256];
+
+	if (m_full_index->wfi_init_is_done() == 0)
+		return 0;
+
+	memset(word, 0, sizeof(word));
+	strncpy(word, key, sizeof(word) - 1);
+
+	trim(word);
+	q_tolower(word);
 
 	/* TODO convert key */
-	crc32 = crc32sum(key);
+	crc32 = crc32sum(word);
 
 	sprintf(dir, "%s/%u/%u", _HTTPD_INDEX_TMP_DIR, crc32 % 13, crc32 % 101);
 	
@@ -101,9 +110,9 @@ int HttpdIndex::hi_fetch(const char *key, int *page, int *page_idx, int *all_tot
 	sprintf(file, "%s/%u", dir, crc32);
 
 	if (!dashf(file))
-		n = hi_new_fetch(file, key, page, page_idx, all_total);
+		n = hi_new_fetch(file, word, page, page_idx, all_total);
 	else
-		n = hi_old_fetch(file, key, page, page_idx, all_total);
+		n = hi_old_fetch(file, word, page, page_idx, all_total);
 
 	return n;
 }

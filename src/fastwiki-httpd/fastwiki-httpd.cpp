@@ -30,7 +30,7 @@ char *m_convert_data[MAX_PTHREAD_TOTAL];
 char *m_buf_data[MAX_PTHREAD_TOTAL];
 char *m_tmp_data[MAX_PTHREAD_TOTAL];
 
-char start_html[4096];
+char start_html[8192];
 char end_html[4096];
 int start_html_len = 0;
 int end_html_len = 0;
@@ -68,7 +68,7 @@ static void my_wait()
 
 static int output_one_page(int sock, WikiSocket *ws, const char *data, int n, const char *K)
 {
-	char tmp[4096];
+	char tmp[8192];
 	int tmp_len = 0;
 	int size;
 	
@@ -225,7 +225,7 @@ int convert_page(char *tmp, char *buf, int len, const char *key)
 		word_t *t = &word[i];
 		for (int j = 0; j < len; j++) {
 			if (t->val[0] == _to_lower(buf[j]) && strncasecmp(buf + j, t->val, t->val_len) == 0) {
-				if (_is_mutil_byte(buf[j]) || (!_is_a2z(buf[j + t->val_len]))) {
+				if (_is_mutil_byte(buf[j]) || (!_is_a2z(buf[j + t->val_len]) && (j > 0 && !_is_a2z(buf[j - 1])))) {
 					t->total = 1;
 					t->pos = j;
 					find_total++;
@@ -241,7 +241,7 @@ int convert_page(char *tmp, char *buf, int len, const char *key)
 	int tmp_pos = 0;
 	int find_pos = 0;
 
-#ifdef DEBUG
+#if 0
 	for (int i = 0; i < word_total; i++) {
 		word_t *t = &word[i];
 		printf("word:%s, pos: %d\n", t->val, t->pos);
@@ -389,13 +389,10 @@ static int my_find_full_text(_FW_URL_FUNC_ARGV, const char *key)
 	int n, total, all_total;
 	char *buf_data = m_buf_data[pthread_idx];
 	char *tmp_data = m_tmp_data[pthread_idx];
-	char title[128], message[2048];
+	char title[128], message[_TMP_DATA_START];
 	int page_idx[16], message_pos = 0;
 	int page = atoi(http->hp_param("page"));
 	struct timeval diff1, diff2;
-
-	LOG("key:%s.\n", key);
-	fflush(stdout);
 
 	gettimeofday(&diff1, NULL);
 
@@ -423,8 +420,6 @@ static int my_find_full_text(_FW_URL_FUNC_ARGV, const char *key)
 
 		char *p = buf_data;
 
-		printf("key: %s\n", title);
-
 		if (http->hp_cookie("showall")[0] == '0') {
 			p = m_convert_data[pthread_idx];
 			len = convert_page(p, buf_data, len, key);
@@ -440,27 +435,42 @@ static int my_find_full_text(_FW_URL_FUNC_ARGV, const char *key)
 		pos += sprintf(tmp_data + pos, "%s", "<br/><br/>\n</td</tr>\n");
 	}
 
-	gettimeofday(&diff2, NULL);
-
 	pos += sprintf(tmp_data + pos, "</table>\n");
 
+	gettimeofday(&diff2, NULL);
+	if (diff2.tv_usec < diff1.tv_usec) {
+		diff2.tv_usec += 1000000;
+		diff2.tv_sec--;
+	}
+
 	message_pos += sprintf(message + message_pos,
-			"<table border=0><tr><td width=600px>Total: %d, Time: %d.%05ds <br/></td></tr></table>\n",
+			"<table border=0><tr><td width=600px>Total: %d, Time: %d.%05ds <br/><br/></td></tr></table>\n",
 			all_total, (int)(diff2.tv_sec - diff1.tv_sec), (int)(diff2.tv_usec - diff1.tv_usec) / 10);
 
 	int page_total = _page_total(all_total);
+	int before_page = page - 1;
+	int next_page = page + 1;
 
-	if (page_total > 20)
-		page_total = 20;
+	if (before_page <= 0)
+		before_page = 1;
 
-	for (int i = 0; i < page_total; i++) {
-		pos += sprintf(tmp_data + pos, "<a href=\"/search?key=%s&ft=on&page=%d\">%d</a> &nbsp; \n", key, i + 1, i + 1);
-	}
+	if (next_page >= page_total)
+		next_page = page_total;
+
+	pos += sprintf(tmp_data + pos, "<table border=0 width=100%%><tr><td align=left width=40%%>"
+			"<a href=\"/search?key=%s&ft=on&page=%d\">"
+			"<font size=4><b>&lt;&lt;&lt;&lt;&lt;</b></font></a></td>\n", key, before_page);
+
+	pos += sprintf(tmp_data + pos, "<td align=center width=20%%>%d/%d</td>", page, page_total);
+
+	pos += sprintf(tmp_data + pos, "<td align=right width=40%%>"
+			"<a href=\"/search?key=%s&ft=on&page=%d\">"
+			"<font size=4><b>&gt;&gt;&gt;&gt;&gt;</b></font></a></td></tr></table>\n<br/>", key, next_page);
 
 	char *tmp = tmp_data + _TMP_DATA_START - message_pos;
 	memcpy(tmp, message, message_pos);
 
-	output_one_page(sock, ws, tmp, pos + message_pos, key);
+	output_one_page(sock, ws, tmp, pos + message_pos - _TMP_DATA_START, http->hp_param("key"));
 
 	return 0;
 }
@@ -470,10 +480,13 @@ static int my_find_full_text(_FW_URL_FUNC_ARGV, const char *key)
 static int my_find_key(_FW_URL_FUNC_ARGV)
 {
 	int total, n;
+	char key[256];
 	sort_idx_t idx;
 	char *buf_data = m_buf_data[pthread_idx];
 	char *tmp_data = m_tmp_data[pthread_idx];
-	char *key = http->hp_param("key");
+
+	strncpy(key, http->hp_param("key"), sizeof(key) - 1);
+	key[sizeof(key) - 1] = 0;
 
 	trim(key); /* TODO */
 	q_tolower(key);
@@ -485,7 +498,7 @@ static int my_find_key(_FW_URL_FUNC_ARGV)
 		if ((n = m_wiki_data->wd_sys_read((int)idx.data_file_idx, idx.data_pos,
 						(int)idx.data_len, buf_data, MAX_PAGE_LEN)) > 0) {
 			char *data = convert_nohtml(buf_data, n, tmp_data, &n);
-			output_one_page(sock, ws, data, n, key);
+			output_one_page(sock, ws, data, n, http->hp_param("key"));
 			return 0;
 		}
 	}
@@ -505,11 +518,22 @@ static int my_output_find_png(_FW_URL_FUNC_ARGV)
 	return 0;
 }
 
-static int my_find_image(_FW_URL_FUNC_ARGV)
+#include "logo-png.h"
+
+static int my_output_logo_png(_FW_URL_FUNC_ARGV)
+{
+	int len = sizeof(_HTTPD_LOGO_PNG) - 1;
+
+	ws->ws_http_output_head(sock, 200, "image/png", len);
+	ws->ws_http_output_body(sock, _HTTPD_LOGO_PNG, len);
+
+	return 0;
+}
+
+static int my_find_image(_FW_URL_FUNC_ARGV, const char *file)
 {
 	int size, one_block;
 	char *buf_data = m_buf_data[pthread_idx];
-	char *file = http->hp_param("file");
 
 #ifndef WIN32
 	if (m_wiki_image == NULL) {
@@ -529,13 +553,12 @@ static int my_find_image(_FW_URL_FUNC_ARGV)
 		return 0;
 	}
 
-	return 0;
+	return output_one_page(sock, ws, "Not Found", 9, "");
 }
 
-static int my_find_math(_FW_URL_FUNC_ARGV)
+static int my_find_math(_FW_URL_FUNC_ARGV, const char *file)
 {
 	int len;
-	char *file = http->hp_param("file");
 	char *buf_data = m_buf_data[pthread_idx];
 
 #ifndef WIN32
@@ -550,13 +573,15 @@ static int my_find_math(_FW_URL_FUNC_ARGV)
 		return 0;
 	}
 
-	return 0;
+	return output_one_page(sock, ws, "Not Found", 9, "");
 }
 
 static int my_find_match(_FW_URL_FUNC_ARGV)
 {
 	sort_idx_t idx[MAX_FIND_RECORD];
 	char *key = http->hp_param("key");
+
+	LOG("key:%s.\n", key);
 
 	trim(key); /* TODO */
 
@@ -587,12 +612,10 @@ static int my_find_match(_FW_URL_FUNC_ARGV)
 		if (match_flag) {
 			wiki_conv_key(key, title, (int)x->key_len, tmp);
 			len += snprintf(buf + len, sizeof(buf) - len,
-					"<a href='#%s' onclick=\"get('pos?idx=%d&pos=%d&len=%d');\">%s</a><br/>",
-					title, x->data_file_idx, x->data_pos, x->data_len, tmp);
+					"<a href='search?key=%s'>%s</a><br/>", title, tmp);
 		} else {
 			len += snprintf(buf + len, sizeof(buf) - len,
-					"<a href='#%s' onclick=\"get('pos?idx=%d&pos=%d&len=%d');\">%s</a><br/>",
-					title, x->data_file_idx, x->data_pos, x->data_len, title);
+					"<a href='search?key=%s'>%s</a><br/>", title, title);
 		}
 	}
 
@@ -611,15 +634,14 @@ static int my_find_pos(_FW_URL_FUNC_ARGV)
 	file_idx = atoi(http->hp_param("idx"));
 	pos = atoi(http->hp_param("pos"));
 	len = atoi(http->hp_param("len"));
+	char *key = http->hp_param("key");
 
 	if ((n = m_wiki_data->wd_sys_read(file_idx, (unsigned int)pos, len, buf_data, MAX_PAGE_LEN)) > 0) {
 		char *w = convert_nohtml(buf_data, n, tmp_data, &n);
-		ws->ws_http_output_head(sock, 200, "text/html", n);
-		ws->ws_http_output_body(sock, w, n);
-		return 0;
+		return output_one_page(sock, ws, w, n, key);
 	}
-	
-	return 0;
+
+	return output_one_page(sock, ws, "Not Found", 9, key);
 }
 
 static int my_find_index(_FW_URL_FUNC_ARGV)
@@ -658,9 +680,8 @@ struct url_func {
 struct url_func m_url_func[] = {
 	{"search", my_find_key},
 	{"match", my_find_match},
-	{"i.jpg", my_find_image},
 	{"find.png", my_output_find_png},
-	{"m.jpg", my_find_math},
+	{"logo.png", my_output_logo_png},
 	{"pos", my_find_pos},
 	{NULL, NULL}
 };
@@ -690,6 +711,12 @@ static int my_do_url(void *_class, void *type, void *_http, int sock, int pthrea
 
 	if (url[0] == 0)
 		return output_one_page(sock, ws, " ", 1, "");
+
+	if (strncmp(url, "I.", 2) == 0)
+		return my_find_image(ws, http, sock, pthread_idx, url + 2);
+
+	if (url[0] == 'M')
+		return my_find_math(ws, http, sock, pthread_idx, url);
 
 	if (check_digit(url))
 		return my_find_index(ws, http, sock, pthread_idx);
