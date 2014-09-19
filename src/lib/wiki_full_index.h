@@ -23,6 +23,8 @@
  findex 1
  */
 
+#define _WFI_CHECK_WORD_LEN 3 /* check a mutil-byte word len */
+
 #define _WFI_IDX_TITLE_LEN 64
 
 struct fidx_head {
@@ -109,12 +111,14 @@ class WikiFullIndex {
 
 	public:
 		int wfi_init(const fw_files_t file, int total);
+		int wfi_init_is_done();
 
 		/*
 		 * string use space to split, such as "a b c"
 		 */
-		int wfi_find(const char *string, int *page_idx, int max_total);
+		int wfi_find(const char *string, int *page_idx, int max_total, int *count_total = NULL);
 
+		int wfi_unload_all_word(const char *file);
 		int wfi_stat();
 
 	/* use for rw */
