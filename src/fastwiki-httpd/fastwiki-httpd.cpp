@@ -19,12 +19,14 @@
 #include "wiki_math.h"
 #include "wiki_image.h"
 
+#include "httpd-index.h"
 #include "fastwiki-httpd.h"
 
 #define MAX_PTHREAD_TOTAL 10
 #define MAX_PAGE_LEN (5*1024*1024)
 
 char *m_math_data[MAX_PTHREAD_TOTAL];
+char *m_convert_data[MAX_PTHREAD_TOTAL];
 char *m_buf_data[MAX_PTHREAD_TOTAL];
 char *m_tmp_data[MAX_PTHREAD_TOTAL];
 
@@ -42,6 +44,7 @@ static WikiImage *m_wiki_image = NULL;
 static WikiFullIndex *m_wiki_full_text = NULL;
 
 static WikiSocket *m_wiki_socket = NULL;
+static HttpdIndex *m_httpd_index = NULL;
 
 static struct file_st *m_file;
 static data_head_t m_data_head;
@@ -158,41 +161,255 @@ char *convert_nohtml(const char *buf, int n, char *tmp, int *tmp_len)
 	return tmp;
 }
 
-#define _FH_IS_CHAPTER_END(p) (0[p] == '<' && (1[p] == 'h' || 1[p] == 'H') \
-		&& (2[p] == 'r' || 2[p] == 'R') && 3[p] == ' ' && (4[p] == 'a' || 4[p] == 'A') \
-		&& (5[p] == 'l' || 5[p] == 'L') && (6[p] == 'i' || 6[p] == 'I') && (7[p] == 'g' || 7[p] == 'G') \
-		&& (8[p] == 'n' || 8[p] == 'N') && 9[p] == '=' && (10[p] == 'l' || 10[p] == 'L') \
-		&& (11[p] == 'e' || 11[p] == 'E') && (12[p] == 'f' || 12[p] == 'F') && (13[p] == 't' || 13[p] == 'T') \
-		&& 14[p] == ' ' && (15[p] == 'w' || 15[p] == 'W') && (16[p] == 'i' || 16[p] == 'I') \
-		&& (17[p] == 'd' || 17[p] == 'D') && (18[p] == 't' || 18[p] == 'T') && (19[p] == 'h' || 19[p] == 'H') \
-		&& 20[p] == '=' && 21[p] == '3' && 22[p] == '5' && 23[p] == '%' && 24[p] == '>') 
+#define _MAX_WORD_TOTAL 128
 
+typedef struct {
+	char *val;
+	int val_len;
+	int total;
+	int pos;
+} word_t;
+
+#define _to_lower(x) (((x) >= 'A' && (x) <= 'Z') ? (x) + 'a' - 'A' : (x))
+#define _is_a2z(x) (((x) >= 'a' && (x) <= 'z') || ((x) >= '0' && (x) <= '9'))
+#define _is_mutil_byte(x) (((unsigned char)(x)) & 0x80)
+
+int _cmp_word_pos(const void *a, const void *b)
+{
+	word_t *pa = (word_t *)a;
+	word_t *pb = (word_t *)b;
+
+	return pa->pos - pb->pos;
+}
+
+int delete_html_tag(char *out, char *buf, int len)
+{
+	int pos = 0;
+
+	for (int i = 0; i < len; i++) {
+		if (buf[i] == '<') {
+			for (; i < len && buf[i] != '>'; i++);
+			continue;
+		}
+		out[pos++] = buf[i];
+	}
+
+	out[pos] = 0;
+
+	return pos;
+}
+
+int convert_page(char *tmp, char *buf, int len, const char *key)
+{
+	int word_total = 0;
+	split_t sp;
+	word_t word[_MAX_WORD_TOTAL];
+	int find_total = 0;
+
+	memset(word, 0, sizeof(word));
+	split(' ', key, sp);
+
+	for_each_split(sp, T) {
+		if (T[0]) {
+			word_t *t = &word[word_total++];
+			t->val = T;
+			t->val_len = strlen(T);
+			t->total = 0;
+		}
+	}
+
+	len = delete_html_tag(tmp, buf, len);
+	memcpy(buf, tmp, len);
+
+	for (int i = 0; i < word_total; i++) {
+		word_t *t = &word[i];
+		for (int j = 0; j < len; j++) {
+			if (t->val[0] == _to_lower(buf[j]) && strncasecmp(buf + j, t->val, t->val_len) == 0) {
+				if (_is_mutil_byte(buf[j]) || (!_is_a2z(buf[j + t->val_len]))) {
+					t->total = 1;
+					t->pos = j;
+					find_total++;
+					break;
+				}
+			}
+		}
+	}
+
+#define _RED_FONT_START "<font color=red>"
+#define _RED_FONT_END "</font>"
+
+	int tmp_pos = 0;
+	int find_pos = 0;
+
+#ifdef DEBUG
+	for (int i = 0; i < word_total; i++) {
+		word_t *t = &word[i];
+		printf("word:%s, pos: %d\n", t->val, t->pos);
+	}
+#endif
+
+	qsort(word, word_total, sizeof(word_t), _cmp_word_pos);
+
+
+	int mb_count = 0;
+
+	for (int i = word[0].pos - 1; i >= 0; i--) {
+		if (word[0].pos - i > 80) {
+			for (; i >= 0; i--) {
+				if (_is_mutil_byte(buf[i])) {
+					mb_count++;
+					if (mb_count % _WFI_CHECK_WORD_LEN == 0)
+						break;
+				} else if (!_is_a2z(buf[i])) {
+					break;
+				}
+			}
+			find_pos = i;
+			break;
+		}
+
+		if (_is_mutil_byte(buf[i]))
+			mb_count++;
+
+		if (buf[i] == '\n') {
+			find_pos = i;
+			break;
+		}
+	}
+
+#define _copy_to_tmp(buf, size) \
+	do { \
+		if (size > 0) { \
+			memcpy(tmp + tmp_pos, buf, size); \
+			tmp_pos += size; \
+		} \
+	} while (0)
+
+	_copy_to_tmp(buf + find_pos, word[0].pos - find_pos);
+
+	for (int i = 0; i < word_total; i++) {
+		word_t *t = &word[i];
+		word_t *last = &word[i - 1];
+		if (i > 0) {
+			int found = 0;
+			mb_count = 0;
+			for (int j = last->pos + last->val_len; j < t->pos; j++) {
+				if (j - (last->pos + last->val_len) > 80) {
+					for (; j < t->pos; j++) {
+						tmp[tmp_pos++] = buf[j];
+						if (_is_mutil_byte(buf[j])) {
+							mb_count++;
+							if (mb_count % _WFI_CHECK_WORD_LEN == 0)
+								break;
+						} else if (!_is_a2z(buf[j])) {
+							break;
+						}
+					}
+					tmp[tmp_pos++] = '#';
+					tmp[tmp_pos++] = ' ';
+					found = 1;
+					break;
+				}
+				if (buf[j] == '\n') {
+					found = 1;
+					break;
+				}
+				if (_is_mutil_byte(buf[j]))
+					mb_count++;
+				tmp[tmp_pos++] = buf[j];
+			}
+
+			if (found == 1) {
+				find_pos = 0;
+				mb_count = 0;
+				for (int j = t->pos - 1; j >= 0; j--) {
+					if (t->pos - j > 80) {
+						for (; j >= 0; j--) {
+							if (_is_mutil_byte(buf[j])) {
+								mb_count++;
+								if (mb_count % _WFI_CHECK_WORD_LEN == 0)
+									break;
+							} else if (!_is_a2z(buf[j]))
+								break;
+						}
+						find_pos = j;
+						break;
+					}
+					if (buf[j] == '\n') {
+						find_pos = j + 1;
+						break;
+					}
+					if (_is_mutil_byte(buf[j]))
+						mb_count++;
+				}
+				for (int j = find_pos; j < t->pos; j++) {
+					tmp[tmp_pos++] = buf[j];
+				}
+			}
+		}
+		_copy_to_tmp(_RED_FONT_START, sizeof(_RED_FONT_START) - 1);
+		_copy_to_tmp(t->val, t->val_len);
+		_copy_to_tmp(_RED_FONT_END, sizeof(_RED_FONT_END) - 1);
+	}
+
+	word_t *next = &word[word_total - 1];
+
+	mb_count = 0;
+	for (int i = next->pos + next->val_len; i < len; i++) {
+		if (i - (next->pos + next->val_len) > 80) {
+			for (; i < len; i++) {
+				tmp[tmp_pos++] = buf[i];
+				if (_is_mutil_byte(buf[i])) {
+					mb_count++;
+					if (mb_count % _WFI_CHECK_WORD_LEN == 0)
+						break;
+				} else if (!_is_a2z(buf[i]))
+					break;
+			}
+			break;
+		}
+		tmp[tmp_pos++] = buf[i];
+		if (buf[i] == '\n')
+			break;
+		if (_is_mutil_byte(buf[i]))
+			mb_count++;
+	}
+
+	tmp[tmp_pos] = 0;
+	
+	return tmp_pos;
+}
 
 #define _FW_URL_FUNC_ARGV WikiSocket *ws, HttpParse *http, int sock, int pthread_idx
 
+#define _TMP_DATA_START (4*1024)
+
 static int my_find_full_text(_FW_URL_FUNC_ARGV, const char *key)
 {
-	int n, total;
+	int n, total, all_total;
 	char *buf_data = m_buf_data[pthread_idx];
 	char *tmp_data = m_tmp_data[pthread_idx];
-	char title[128];
-	int page_idx[16];
+	char title[128], message[2048];
+	int page_idx[16], message_pos = 0;
+	int page = atoi(http->hp_param("page"));
+	struct timeval diff1, diff2;
 
 	LOG("key:%s.\n", key);
 	fflush(stdout);
 
-	total = m_wiki_full_text->wfi_find(key, page_idx, sizeof(page_idx) / sizeof(int));
+	gettimeofday(&diff1, NULL);
+
+	total = m_httpd_index->hi_fetch(key, &page, page_idx, &all_total);
 
 	if (total <= 0) {
 		n = sprintf(buf_data, "Not found: %s\n", key);
 		return output_one_page(sock, ws, buf_data, n, key);
 	}
 
-	int pos = 0, len;
+	int pos = _TMP_DATA_START, len;
 	sort_idx_t idx;
 
-	pos += sprintf(tmp_data + pos, "about total: %d <br/><br/>\n", total);
-	pos += sprintf(tmp_data + pos, "<table border=1>\n");
+	pos += sprintf(tmp_data + pos, "<table border=0>\n");
 
 	for (int i = 0; i < total; i++) {
 		if (m_wiki_index->wi_find(NULL, WK_INDEX_FIND, page_idx[i], &idx, &len) == -1)
@@ -202,31 +419,53 @@ static int my_find_full_text(_FW_URL_FUNC_ARGV, const char *key)
 		if ((len = m_wiki_data->wd_sys_read(idx.data_file_idx, idx.data_pos, idx.data_len, buf_data, MAX_PAGE_LEN)) <=  0)
 			continue;
 
-		int found = 0;
-		int j = 0;
-		for (j = 0; j < len && j < 4096; j++) {
-			if (_FH_IS_CHAPTER_END(buf_data + j)) {
-				j += 25;
-				found = 1;
-				break;
-			}
-		}
-		if (found == 0)
-			j = 0;
-		/*
-		   if (len - j >= 512)
-		   len = j + 512;
-		   */
 		buf_data[len] = 0;
-		pos += sprintf(tmp_data + pos, "<tr><td>idx:%d, title: %s<br/>\n", page_idx[i], title);
-		pos += sprintf(tmp_data + pos, "%s<br/><br/></td</tr>\n", buf_data + j);
+
+		char *p = buf_data;
+
+		printf("key: %s\n", title);
+
+		if (http->hp_cookie("showall")[0] == '0') {
+			p = m_convert_data[pthread_idx];
+			len = convert_page(p, buf_data, len, key);
+		}
+
+		pos += sprintf(tmp_data + pos, "<tr><td width=600px>"
+					"<a href='%d#%s?key=%s'><font size=4>%s</font></a><br/>\n",
+					page_idx[i], title, key, title);
+
+		memcpy(tmp_data + pos, p, len);
+		pos += len;
+
+		pos += sprintf(tmp_data + pos, "%s", "<br/><br/>\n</td</tr>\n");
 	}
 
+	gettimeofday(&diff2, NULL);
+
 	pos += sprintf(tmp_data + pos, "</table>\n");
-	output_one_page(sock, ws, tmp_data, pos, key);
+
+	message_pos += sprintf(message + message_pos,
+			"<table border=0><tr><td width=600px>Total: %d, Time: %d.%05ds <br/></td></tr></table>\n",
+			all_total, (int)(diff2.tv_sec - diff1.tv_sec), (int)(diff2.tv_usec - diff1.tv_usec) / 10);
+
+	int page_total = _page_total(all_total);
+
+	if (page_total > 20)
+		page_total = 20;
+
+	for (int i = 0; i < page_total; i++) {
+		pos += sprintf(tmp_data + pos, "<a href=\"/search?key=%s&ft=on&page=%d\">%d</a> &nbsp; \n", key, i + 1, i + 1);
+	}
+
+	char *tmp = tmp_data + _TMP_DATA_START - message_pos;
+	memcpy(tmp, message, message_pos);
+
+	output_one_page(sock, ws, tmp, pos + message_pos, key);
 
 	return 0;
 }
+
+#define _is_http_full_text(_h) (_h->hp_cookie("fulltext")[0] == '1' || _h->hp_param("ft")[0] != 0)
 
 static int my_find_key(_FW_URL_FUNC_ARGV)
 {
@@ -235,11 +474,11 @@ static int my_find_key(_FW_URL_FUNC_ARGV)
 	char *buf_data = m_buf_data[pthread_idx];
 	char *tmp_data = m_tmp_data[pthread_idx];
 	char *key = http->hp_param("key");
-	char *ft = http->hp_param("ft");
 
 	trim(key); /* TODO */
+	q_tolower(key);
 
-	if (ft[0])
+	if (_is_http_full_text(http))
 		return my_find_full_text(ws, http, sock, pthread_idx, key);
 
 	if (m_wiki_index->wi_find(key, WK_KEY_FIND, -1, &idx, &total) == 0) {
@@ -252,6 +491,18 @@ static int my_find_key(_FW_URL_FUNC_ARGV)
 	}
 
 	return output_one_page(sock, ws, "Not Found", 9, "");
+}
+
+#include "find-png.h"
+
+static int my_output_find_png(_FW_URL_FUNC_ARGV)
+{
+	int len = sizeof(_HTTPD_FIND_PNG) - 1;
+
+	ws->ws_http_output_head(sock, 200, "image/png", len);
+	ws->ws_http_output_body(sock, _HTTPD_FIND_PNG, len);
+
+	return 0;
 }
 
 static int my_find_image(_FW_URL_FUNC_ARGV)
@@ -408,6 +659,7 @@ struct url_func m_url_func[] = {
 	{"search", my_find_key},
 	{"match", my_find_match},
 	{"i.jpg", my_find_image},
+	{"find.png", my_output_find_png},
 	{"m.jpg", my_find_math},
 	{"pos", my_find_pos},
 	{NULL, NULL}
@@ -425,9 +677,9 @@ static int my_do_url(void *_class, void *type, void *_http, int sock, int pthrea
 	const char *url;
 	WikiSocket *ws = (WikiSocket *)type;
 	HttpParse *http = (HttpParse *)_http;
-	char *ft = http->hp_param("ft");
 
-	start_html_len = sprintf(start_html, HTTP_START_HTML, ft[0] ? "checked" : "");
+	start_html_len = sprintf(start_html, HTTP_START_HTML, _is_http_full_text(http) ? "checked" : "",
+				http->hp_cookie("showall")[0] == '1' ? "checked" : "");
 	end_html_len = sprintf(end_html, "%s", HTTP_END_HTML);
 
 	url = http->hp_url();
@@ -439,6 +691,9 @@ static int my_do_url(void *_class, void *type, void *_http, int sock, int pthrea
 	if (url[0] == 0)
 		return output_one_page(sock, ws, " ", 1, "");
 
+	if (check_digit(url))
+		return my_find_index(ws, http, sock, pthread_idx);
+
 	for (int i = 0; m_url_func[i].url; i++) {
 		struct url_func *p = &m_url_func[i];
 		if (strcmp(p->url, url) == 0) {
@@ -446,10 +701,6 @@ static int my_do_url(void *_class, void *type, void *_http, int sock, int pthrea
 		}
 	}
 
-	if (check_digit(url))
-		return my_find_index(ws, http, sock, pthread_idx);
-
-error:
 	ws->ws_http_output_head(sock, 404, "text/html", 10);
 	ws->ws_http_output_body(sock, "Not Found\n", 10);
 
@@ -470,6 +721,7 @@ int wiki_init()
 		m_math_data[i] = (char *)malloc(512*1024);
 		m_buf_data[i] = (char *)malloc(MAX_PAGE_LEN);
 		m_tmp_data[i] = (char *)malloc(MAX_PAGE_LEN);
+		m_convert_data[i] = (char *)malloc(MAX_PAGE_LEN);
 	}
 
 	m_wiki_config = new WikiConfig();
@@ -514,6 +766,9 @@ int wiki_init()
 	m_wiki_full_text = new WikiFullIndex();
 	m_wiki_full_text->wfi_init(m_file->fidx_file, m_file->fidx_file_total);
 	m_wiki_full_text->wfi_stat();
+
+	m_httpd_index = new HttpdIndex();
+	m_httpd_index->hi_init(m_wiki_full_text);
 
 	m_wiki_socket = new WikiSocket();
 	m_wiki_socket->ws_init(my_wait, my_do_url, NULL);

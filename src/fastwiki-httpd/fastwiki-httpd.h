@@ -93,6 +93,24 @@
 "				$(\"main\").innerHTML = s;\n" \
 "			}\n" \
 "\n" \
+"			function checkbox()\n" \
+"			{\n" \
+"				if (document.f1.ft.checked) {\n" \
+"					document.cookie = \"fulltext=1;\";\n" \
+"				} else {\n" \
+"					document.cookie = \"fulltext=0;\";\n" \
+"				}\n" \
+"			}\n" \
+"\n" \
+"			function check_show()\n" \
+"			{\n" \
+"				if (document.f1.showall.checked) {\n" \
+"					document.cookie = \"showall=1;\";\n" \
+"				} else {\n" \
+"					document.cookie = \"showall=0;\";\n" \
+"				}\n" \
+"			}\n" \
+"\n" \
 "			document.onkeydown = function(e){\n" \
 "				e = e || event;\n" \
 "				if (e.keyCode == 27) {\n" \
@@ -104,24 +122,28 @@
 "		</script>\n" \
 "	</head>\n" \
 "	<body>\n" \
+"	<br/>\n" \
 "		<form method=GET action=search name=f1>\n" \
 "			<table border=0>\n" \
-"				<tr><td> Fastwiki: </td>\n" \
-"					<td><input id=in1 type=text name=key autocomplete=\"off\" size=40 >\n" \
-"						<input type=button onclick=\"_submit()\" value=submit> \n" \
-"						(Full Text Search: <input type=\"checkbox\" name=ft %s />)\n" \
-"						<br/>\n" \
+"				<tr><td width=130px align=right> <font size=5 color=blue><b>Fastwiki</b></font>&nbsp;</td>\n" \
+"					<td width=500px><input id=in1 type=text name=key autocomplete=\"off\" size=50 >\n" \
+"						<input type=button onclick=\"_submit()\" value=submit />\n" \
+"					</td>\n" \
+"					<td>\n" \
+"						Full Text Search: <input type=\"checkbox\" onclick=\"checkbox();\" name=ft %s /><br/>\n" \
+"						Show All: <input type=\"checkbox\" onclick=\"check_show();\" name=showall %s /> \n" \
 "					</td>\n" \
 "				</tr>\n" \
-"				<tr><td>&nbsp;</td>\n" \
-"					<td>\n" \
+"				<tr><td width=130px>&nbsp;</td>\n" \
+"					<td width=500px>\n" \
 "						<div id=test class=xx style=\"display:block;position:absolute;\"></div>\n" \
 "					</td>\n" \
+"					<td> &nbsp; </td>\n" \
 "				</tr>\n" \
 "			</table>\n" \
 "		</form>\n" \
 "\n" \
-"		<div id=main>\n" \
+"		<div id=main style=\"margin-left: 130px; width: 600px;\">\n" \
 
 
 #define HTTP_END_HTML \

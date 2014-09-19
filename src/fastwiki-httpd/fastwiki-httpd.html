@@ -89,6 +89,24 @@
 				$("main").innerHTML = s;
 			}
 
+			function checkbox()
+			{
+				if (document.f1.ft.checked) {
+					document.cookie = "fulltext=1;";
+				} else {
+					document.cookie = "fulltext=0;";
+				}
+			}
+
+			function check_show()
+			{
+				if (document.f1.showall.checked) {
+					document.cookie = "showall=1;";
+				} else {
+					document.cookie = "showall=0;";
+				}
+			}
+
 			document.onkeydown = function(e){
 				e = e || event;
 				if (e.keyCode == 27) {
@@ -100,25 +118,29 @@
 		</script>
 	</head>
 	<body>
+	<br/>
 		<form method=GET action=search name=f1>
 			<table border=0>
-				<tr><td> Fastwiki: </td>
-					<td><input id=in1 type=text name=key autocomplete="off" size=40 >
-						<input type=button onclick="_submit()" value=submit> 
-						(Full Text Search: <input type="checkbox" name=ft %s />)
-						<br/>
+				<tr><td width=130px align=right> <font size=5 color=blue><b>Fastwiki</b></font>&nbsp;</td>
+					<td width=500px><input id=in1 type=text name=key autocomplete="off" size=50 >
+						<input type=button onclick="_submit()" value=submit />
+					</td>
+					<td>
+						Full Text Search: <input type="checkbox" onclick="checkbox();" name=ft %s /><br/>
+						Show All: <input type="checkbox" onclick="check_show();" name=showall %s /> 
 					</td>
 				</tr>
-				<tr><td>&nbsp;</td>
-					<td>
+				<tr><td width=130px>&nbsp;</td>
+					<td width=500px>
 						<div id=test class=xx style="display:block;position:absolute;"></div>
 					</td>
+					<td> &nbsp; </td>
 				</tr>
 			</table>
 		</form>
 
-		<div id=main>
-		SPLIT
+		<div id=main style="margin-left: 130px; width: 600px;">
+			SPLIT
 		</div>
 
 		<script language=javascript>
