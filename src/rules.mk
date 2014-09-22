@@ -20,13 +20,17 @@ libs = -lm -lbz2 -lz -lpthread -L$(root)/lib -lfastwiki -L$(libbase_lib) -lbase
 cppflag += -DO_BINARY=0
 USE_STARDICT_PERL=1
 else
-libs = -static -L$(root)/lib -L$(libbase_lib) -static -L$(MINGW_LIB) -lpthreadGC2 -lfastwiki -lbase -lws2_32 -lm -lbz2 -lz 
+inc = -DPTW32_STATIC_LIB
+libs = -static -L$(root)/lib -L$(libbase_lib) -static \
+	   -lfastwiki -lbase \
+	   -L/c/MinGW/lib -L/c/MinGW/mingw32/lib -lpthreadGC2 \
+	   -lws2_32 -lm -lbz2 -lz
 # export MINGW_LIB=/c/MinGW/lib
 endif
 
 libs += -L$(root)/../base/minilzo -lfwminilzo
 
-inc = -I. -D_FASTWIKI_BIN_ -I$(root)/lib -I$(libbase_inc)
+inc += -I. -D_FASTWIKI_BIN_ -I$(root)/lib -I$(libbase_inc)
 
 ifeq ($(USE_STARDICT_PERL), 1)
 cppflag += -D_STARDICT_PERL

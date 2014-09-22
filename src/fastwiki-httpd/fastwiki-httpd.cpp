@@ -808,12 +808,12 @@ int wiki_init(const char *dir)
 
 	fw_dir_t tmp;
 	int lang_total;
-	struct file_st file[256];
+	struct file_st file[4];
 
 	strcpy(tmp.path, dir);
 
 	WikiScanFile *wsf = new WikiScanFile();
-	lang_total = wsf->wsf_scan_file(file, 256, &tmp, 1);
+	lang_total = wsf->wsf_scan_file(file, 4, &tmp, 1);
 
 	if (lang_total == 0) {
 		LOG("Not found any data file in folder %s ?\n", dir);
@@ -847,7 +847,10 @@ int wiki_init(const char *dir)
 
 	m_wiki_full_text = new WikiFullIndex();
 	m_wiki_full_text->wfi_init(m_file->fidx_file, m_file->fidx_file_total);
+
+#ifdef DEBUG
 	m_wiki_full_text->wfi_stat();
+#endif
 
 	m_httpd_index = new HttpdIndex();
 	m_httpd_index->hi_init(m_wiki_full_text);
