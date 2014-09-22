@@ -89,21 +89,29 @@
 				$("main").innerHTML = s;
 			}
 
+			function set_cookie(v)
+			{
+				var exp = new Date();
+				exp.setTime(exp.getTime() + 365*10*86400*1000);
+
+				document.cookie = v + "; expires=" + exp.toGMTString();
+			}
+
 			function checkbox()
 			{
 				if (document.f1.ft.checked) {
-					document.cookie = "fulltext=1;";
+					set_cookie("fulltext=1");
 				} else {
-					document.cookie = "fulltext=0;";
+					set_cookie("fulltext=0");
 				}
 			}
 
 			function check_show()
 			{
 				if (document.f1.showall.checked) {
-					document.cookie = "showall=1;";
+					set_cookie("showall=1");
 				} else {
-					document.cookie = "showall=0;";
+					set_cookie("showall=0");
 				}
 			}
 

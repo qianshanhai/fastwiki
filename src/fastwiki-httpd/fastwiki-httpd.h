@@ -93,21 +93,29 @@
 "				$(\"main\").innerHTML = s;\n" \
 "			}\n" \
 "\n" \
+"			function set_cookie(v)\n" \
+"			{\n" \
+"				var exp = new Date();\n" \
+"				exp.setTime(exp.getTime() + 365*10*86400*1000);\n" \
+"\n" \
+"				document.cookie = v + \"; expires=\" + exp.toGMTString();\n" \
+"			}\n" \
+"\n" \
 "			function checkbox()\n" \
 "			{\n" \
 "				if (document.f1.ft.checked) {\n" \
-"					document.cookie = \"fulltext=1;\";\n" \
+"					set_cookie(\"fulltext=1\");\n" \
 "				} else {\n" \
-"					document.cookie = \"fulltext=0;\";\n" \
+"					set_cookie(\"fulltext=0\");\n" \
 "				}\n" \
 "			}\n" \
 "\n" \
 "			function check_show()\n" \
 "			{\n" \
 "				if (document.f1.showall.checked) {\n" \
-"					document.cookie = \"showall=1;\";\n" \
+"					set_cookie(\"showall=1\");\n" \
 "				} else {\n" \
-"					document.cookie = \"showall=0;\";\n" \
+"					set_cookie(\"showall=0\");\n" \
 "				}\n" \
 "			}\n" \
 "\n" \

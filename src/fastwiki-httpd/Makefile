@@ -11,7 +11,7 @@ program = fastwiki-httpd
 
 all: $(program)
 
-fastwiki-httpd: fastwiki-httpd.o wiki_config.o
+fastwiki-httpd: fastwiki-httpd.o httpd-index.o 
 	$(cpp) -o $@ $^ $(libs)
 
 clean:
