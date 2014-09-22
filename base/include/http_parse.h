@@ -16,6 +16,7 @@ class HttpParse {
 	private:
 		char m_host[32];
 		char m_url[64];
+		char m_zero[4];
 
 		struct http_param m_cookie[_MAX_HTTP_COOKIE_TOTAL];
 		int m_cookie_total;

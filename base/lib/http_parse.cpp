@@ -12,6 +12,7 @@ HttpParse::HttpParse()
 {
 	memset(m_host, 0, sizeof(m_host));
 	memset(m_url, 0, sizeof(m_url));
+	memset(m_zero, 0, sizeof(m_zero));
 }
 
 HttpParse::~HttpParse()
@@ -47,7 +48,8 @@ int HttpParse::hp_init_all(char *buf, int len)
 	if (remain == NULL) {
 		remain = (char *)"";
 	} else {
-		*remain++ = 0;
+		*--remain = 0;
+		remain++;
 	}
 
 	if (strncmp(buf, "GET ", 4) == 0 || strncmp(buf, "POST ", 5) == 0) {
@@ -195,7 +197,7 @@ char *HttpParse::hp_fetch(struct http_param *buf, int total, const char *name)
 			return p->value;
 	}
 
-	return (char *)"";
+	return m_zero;
 }
 
 char *HttpParse::hp_param(const char *name)
