@@ -20,6 +20,7 @@
 #define WK_IDX_PREFIX "fastwiki.idx."
 #define WK_MATH_PREFIX "fastwiki.math."
 #define WK_IMAGE_PREFIX "fastwiki.image."
+#define WK_FIDX_PREFIX "fastwiki.fidx."
 
 #define LOG_FILE BASE_DIR "/" "fastwiki.log"
 #define CFG_FILE "fastwiki2.cfg"
@@ -107,6 +108,9 @@ struct file_st {
 
 	fw_files_t image_file;
 	int image_total;
+
+	fw_files_t fidx_file;
+	int fidx_file_total;
 
 	int flag; /* =1 valid, =0 invalid */
 

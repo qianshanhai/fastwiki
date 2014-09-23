@@ -60,6 +60,7 @@ static int wiki_fetch_one_page(int *href_idx, char *buf, int buf_len, int *ret_l
 		if (m_wiki_index->wi_fetch(m_href_curr, &idx)) {
 			if ((n = m_wiki_data->wd_sys_read((int)idx.data_file_idx,
 							idx.data_pos, idx.data_len, buf, buf_len)) > 0) {
+				buf[n] = 0;
 				*href_idx = m_href_curr;
 				*ret_len = n;
 				pthread_mutex_unlock(&m_fidx_mutex);
@@ -172,7 +173,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	start_create_index(index_file, data_file, data_file_total, "tmp", 1800*1024*1024, z_flag);
+	start_create_index(index_file, data_file, data_file_total, "tmp", 2*1024*1024*1024L, z_flag);
 
 	return 0;
 }

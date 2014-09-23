@@ -239,6 +239,9 @@ int WikiConfig::wc_scan_lang(const char *dir, const char *fname)
 		} else if (my_strncmp(fname, WK_IMAGE_PREFIX) == 0) {
 			p = wc_get_file_st(sp[2]);
 			sprintf(p->image_file[p->image_total++], "%s/%s", dir, fname);
+		} else if (my_strncmp(fname, WK_FIDX_PREFIX) == 0) {
+			p = wc_get_file_st(sp[2]);
+			sprintf(p->fidx_file[p->fidx_file_total++], "%s/%s", dir, fname);
 		}
 	}
 

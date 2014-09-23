@@ -3,22 +3,13 @@ include $(root)/rules.mk
 
 objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 
-program = fastwiki-full-index test-fidx find-fidx
+program = fastwiki-full-index test-fidx find-fidx unload-fidx
 
-%.o:%.cpp
-	@$(cpp) $(cppflag) $(inc) -o $@ -c $<
+%:%.cpp
+	$(cpp) $(cppflag) $(inc) -o $@ $^ $(libs)
 	@echo "  CC    $@"
 
 all: $(program)
 
-fastwiki-full-index: fastwiki-full-index.o
-	$(cpp) -o $@ $^ $(libs)
-
-test-fidx: test-fidx.o
-	$(cpp) -o $@ $^ $(libs)
-
-find-fidx: find-fidx.o
-	$(cpp) -o $@ $^ $(libs)
-
 clean:
-	rm -f $(program) $(objs)
+	rm -f $(program)

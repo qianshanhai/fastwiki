@@ -856,7 +856,6 @@ public class FastWiki extends SherlockFragmentActivity {
 
 	public native String N(String name);
 
-	public native int IsValidDir(String dir);
 	public native String WikiBaseUrl();
 
 	public native int WikiSetFontSize(int n);
