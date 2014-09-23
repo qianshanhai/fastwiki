@@ -50,99 +50,97 @@ WikiConfig::WikiConfig()
 
 WikiConfig::~WikiConfig()
 {
-	if (m_hash)
-		delete m_hash;
+	if (m_bookmark)
+		delete m_bookmark;
 }
 
 /* TODO check return value */
-int WikiConfig::wc_init(const char *dir)
+int WikiConfig::wc_init()
 {
-	int r;
-	char file[256];
+	m_scan_file = new WikiScanFile();
 
-#ifdef FW_NJI
-	if (!dashd(BASE_DIR)) {
-		if (q_mkdir(BASE_DIR, 0755) == -1)
-			return -1;
-	}
-	sprintf(file, "%s/%s", BASE_DIR, CFG_NEW_FILE);
-
-#else
-	strcpy(file, CFG_NEW_FILE);
-#endif
-
-	r = dashf(file);
-	wc_init_config(file);
+	if (wc_init_config() == -1)
+		return -1;
 
 	if (m_config->use_language[0] == 0)
 		set_lang("en");
 	else
 		set_lang(m_config->use_language);
 
-	if (m_config->dir_total == 0) {
-		memset(m_config->base_dir, 0, sizeof(m_config->base_dir));
-		wc_add_dir(BASE_DIR);
-	}
-
 	wc_init_lang();
 
 	m_config->color_total = 0;
 	wc_init_color();
 
-	if (wc_get_fontsize() <= 0)
-		wc_set_fontsize(12);
+	if (m_config->font_size <= 0)
+		m_config->font_size = 13;
 
 	return 0;
 }
 
 int WikiConfig::wc_get_fontsize()
 {
-	return m_config == NULL ? 0 : m_config->font_size;
+	return m_config == NULL ? 13 : m_config->font_size;
 }
 
 int WikiConfig::wc_set_fontsize(int fontsize)
 {
 	if (m_config == NULL)
-		return 0;
+		return 13;
 
-	m_config->font_size = fontsize <= 0 ? 13 : fontsize;
+	int n = m_config->font_size;
+	
+	if (n <= 0)
+		n = 13;
 
-	return 1;
+	if (n > 3 || fontsize > 0) {
+		n += fontsize;
+		m_config->font_size = n; 
+	}
+
+	return n;
 }
 
-int WikiConfig::wc_init_config(const char *file)
+int WikiConfig::wc_init_config()
 {
-	m_hash = new SHash();
+	mapfile_t mt;
+	char file[128];
 
-	m_hash->sh_set_hash_magic(10000);
-
-#ifdef FW_NJI
-	if (m_hash->sh_init(file, sizeof(struct fw_cfg_key), sizeof(struct fw_cfg_value), 1000, 1) == -1)
-		return -1;
-#else
-	if (m_hash->sh_init(100, sizeof(struct fw_cfg_key), sizeof(struct fw_cfg_value)) == -1)
-		return -1;
-#endif
-
-	m_hash->sh_get_user_data((void **)&m_config);
-
-	if (m_config->version == 0) {
-		m_hash->sh_clean();
-		m_config->version = 1;
+	if (!dashd(BASE_DIR)) {
+		if (q_mkdir(BASE_DIR, 0755) == -1)
+			return -1;
 	}
+
+	sprintf(file, "%s/%s", BASE_DIR, CFG_NEW_FILE);
+
+	if (!dashf(file)) {
+		int fd = open(file, O_RDWR | O_CREAT, 0644);
+		if (fd == -1)
+			return -1;
+		fw_config_t *p = (fw_config_t *)malloc(sizeof(fw_config_t));
+		memset(p, 0, sizeof(fw_config_t));
+		write(fd, p, sizeof(fw_config_t));
+		close(fd);
+	}
+
+	if ((m_config = (fw_config_t *)mapfile(file, &mt, 1)) == NULL)
+		return -1;;
+
+	m_bookmark = new WikiBookmark();
+	m_bookmark->wbm_init(BASE_DIR);
 
 	return 0;
 }
 
 int WikiConfig::wc_init_lang()
 {
-	m_file_total = 0;
-	memset(m_file, 0, sizeof(m_file));
-
-	for (int i = 0; i < m_config->dir_total; i++) {
-		m_read_dir_count = 0;
-		wc_scan_dir(m_config->base_dir[i], &WikiConfig::wc_scan_lang);
+	if (m_config->dir_total == 0) {
+		memset(m_config->base_dir, 0, sizeof(m_config->base_dir));
+		fw_dir_t *p = &m_config->base_dir[m_config->dir_total++];
+		strcpy(p->path, BASE_DIR);
 	}
+
+	m_file_total = m_scan_file->wsf_scan_file(m_file, MAX_LANG_TOTAL, m_config->base_dir, m_config->dir_total);
 
 	if (m_file_total == 0)
 		return -1;
@@ -176,269 +174,17 @@ int WikiConfig::wc_init_lang()
 	return 0;
 }
 
-/*
- */
-int WikiConfig::wc_add_dir(const char *dir)
-{
-	if (m_config->dir_total >= MAX_FW_DIR_TOTAL -1)
-		return 0;
-
-	strncpy(m_config->base_dir[m_config->dir_total++], dir, MAX_FW_DIR_LEN - 1);
-
-	return 0;
-}
-
-int WikiConfig::wc_clean_tmp_dir()
-{
-	m_tmp_dir_total = 0;
-	memset(m_tmp_dir, 0, sizeof(m_tmp_dir));
-
-	return 0;
-}
-
-int WikiConfig::wc_add_tmp_dir(const char *dir)
-{
-	if (m_tmp_dir_total >= MAX_TMP_DIR_TOTAL - 1)
-		return 0;
-
-	strncpy(m_tmp_dir[m_tmp_dir_total++], dir, MAX_FW_DIR_LEN - 1);
-
-	return 0;
-}
-
-static int _cmp_dir(const void *a, const void *b)
-{
-	const char *p1 = (const char *)a;
-	const char *p2 = (const char *)b;
-
-	return strcmp(p1, p2);
-}
-
-int sys_strncmp(const char *a, const char *b, int len, char *buf)
-{
-	return strncmp(a, b, len);
-}
-
-int dir_strncmp(const char *a, const char *b, int len, char *buf)
-{
-	char *pa, *pb;
-	
-	if ((pa = strrchr(a, '/')) == NULL || (pb = (strrchr(b, '/'))) == NULL)
-		return 1;
-
-	if (pa - a != pb - b)
-		return 1;
-
-	strncpy(buf, a, pa - a);
-	buf[pa - a] = 0;
-
-	return strncmp(a, b, pa - a);
-}
-
-int WikiConfig::wc_merge_tmp_dir_first(int flag,
-			tmp_dir_t tmp, int tmp_total, tmp_dir_t to, int *to_total,
-			int (*cmp)(const char *a, const char *b, int len, char *buf))
-{
-	char *curr;
-	char buf[256];
-
-	*to_total = 0;
-
-	for (int i = 0; i < tmp_total; i++) {
-		curr = tmp[i];
-		strcpy(to[(*to_total)++], curr);
-
-		if (i == tmp_total - 1)
-			break;
-		
-		if (cmp(curr, tmp[i + 1], strlen(curr), buf) != 0)
-			continue;
-
-		for (i++; i < tmp_total; i++) {
-			if (cmp(curr, tmp[i], strlen(curr), buf) != 0) {
-				i--;
-				break;
-			}
-		}
-
-		if (flag) 
-			strcpy(to[*to_total - 1], buf);
-	}
-
-	return *to_total;
-}
-
-int WikiConfig::wc_merge_tmp_dir()
-{
-	int total;
-	tmp_dir_t buf;
-
-	qsort(m_tmp_dir, m_tmp_dir_total, MAX_FW_DIR_LEN, _cmp_dir);
-
-	wc_merge_tmp_dir_first(0, m_tmp_dir, m_tmp_dir_total, buf, &total, sys_strncmp);
-	wc_merge_tmp_dir_first(1, buf, total, m_tmp_dir, &m_tmp_dir_total, dir_strncmp);
-
-	m_config->dir_total = m_tmp_dir_total;
-
-	for (int i = 0; i < m_tmp_dir_total; i++) {
-		strncpy(m_config->base_dir[i], m_tmp_dir[i], sizeof(m_config->base_dir[i]) - 1);
-	}
-
-	return 0;
-}
-
 int WikiConfig::wc_scan_all()
 {
-	int total;
-	char tmp[25][MAX_FW_DIR_LEN];
+	char *dir[] = { "/storage", "/mnt", NULL};
 
-	wc_clean_tmp_dir();
-	wc_scan_sdcard("/", 1);
-
-	total = m_tmp_dir_total;
-
-	if (total > 0)
-		memcpy(tmp, m_tmp_dir, sizeof(m_tmp_dir));
-
-	wc_clean_tmp_dir();
-
-	for (int i = 0; i < total; i++)
-		wc_scan_sdcard(tmp[i], 0);
-
-	wc_scan_sdcard("/storage", 1);
-	wc_scan_sdcard("/mnt", 0);
-
-	wc_merge_tmp_dir();
-
+	m_config->dir_total = m_scan_file->wsf_fetch_fw_dir(m_config->base_dir, sizeof(m_config->base_dir) / sizeof(fw_dir_t), dir, 2);
 	wc_init_lang();
 
 	if (m_file_total > 0)
 		wc_set_translate_default(m_file[0].lang);
 
 	return 0;
-}
-
-int WikiConfig::wc_scan_sdcard(const char *dir, int flag)
-{
-	DIR *dirp;
-	struct dirent *d;
-	char fname[256];
-
-	if ((dirp = opendir(dir)) == NULL) {
-		return errno == EACCES ? 0 : -1;
-	}
-
-	while ((d = readdir(dirp))) {
-		if (d->d_name[0] == '.')
-			continue;
-		sprintf(fname, "%s/%s", dir, d->d_name);
-
-		if (flag) {
-			if (dashd(fname) && strcasestr(d->d_name, "sd") != NULL) {
-				if (!dashl(fname)) {
-					wc_add_tmp_dir(fname);
-				}
-			}
-		} else {
-			if (dashd(fname)) {
-				wc_scan_sdcard(fname, flag);
-			} else {
-				if (strncmp(d->d_name, "fastwiki.", 9) == 0) {
-					wc_add_tmp_dir(dir);
-					break;
-				}
-			}
-		}
-	}
-
-	closedir(dirp);
-
-	return 0;
-}
-
-#define my_strncmp(s, STR) strncmp(s, STR, sizeof(STR) - 1)
-
-struct file_st *WikiConfig::wc_get_file_st(const char *lang)
-{
-	struct file_st *p;
-
-	for (int i = 0; i < m_file_total; i++) {
-		p = &m_file[i];
-		if (strcmp(p->lang, lang) == 0) {
-			strncpy(p->lang, lang, sizeof(p->lang) - 1);
-			return p;
-		}
-	}
-
-	p = &m_file[m_file_total++];
-	strncpy(p->lang, lang, sizeof(p->lang) - 1);
-
-	return p;
-}
-
-int WikiConfig::wc_scan_lang(const char *dir, const char *fname)
-{
-	split_t sp;
-	struct file_st *p;
-
-	if (split('.', fname, sp) >= 3) {
-		if (my_strncmp(fname, WK_DAT_PREFIX) == 0) {
-			p = wc_get_file_st(sp[2]);
-			sprintf(p->data_file[p->data_total++], "%s/%s", dir, fname);
-		} else if (my_strncmp(fname, WK_IDX_PREFIX) == 0) {
-			p = wc_get_file_st(sp[2]);
-			sprintf(p->index_file, "%s/%s", dir, fname);
-		} else if (my_strncmp(fname, WK_MATH_PREFIX) == 0) {
-			p = wc_get_file_st(sp[2]);
-			sprintf(p->math_file, "%s/%s", dir, fname);
-		} else if (my_strncmp(fname, WK_IMAGE_PREFIX) == 0) {
-			p = wc_get_file_st(sp[2]);
-			sprintf(p->image_file[p->image_total++], "%s/%s", dir, fname);
-		}
-	}
-
-	return 0;
-}
-
-int WikiConfig::wc_scan_dir(const char *dir, 
-		int (WikiConfig::*func)(const char *dir, const char *fname))
-{
-	DIR *dirp;
-	struct dirent *d;
-	char buf[1024];
-	int n = 0;
-	int deep = 2;
-
-	if (strncmp(dir, BASE_DIR, sizeof(BASE_DIR) - 1) == 0)
-		deep = 5;
-
-	if (m_read_dir_count >= deep)
-		return 0;
-
-	m_read_dir_count++;
-
-	if ((dirp = opendir(dir)) == NULL)
-		return -1;
-
-	while ((d = readdir(dirp))) {
-		if (d->d_name[0] == '.')
-			continue;
-		snprintf(buf, sizeof(buf), "%s/%s", dir, d->d_name);
-		if (dashd(buf)) {
-			if ((n = wc_scan_dir(buf, func)) == -1) {
-				break;
-			}
-		} else {
-			if ((n = (this->*func)(dir, d->d_name)) == -1)
-				break;
-		}
-	}
-
-	closedir(dirp);
-	
-	m_read_dir_count--;
-
-	return n;
 }
 
 int WikiConfig::wc_check_lang()
@@ -473,61 +219,12 @@ int WikiConfig::wc_get_lang_list(char lang[MAX_SELECT_LANG_TOTAL][24], int *lang
 int WikiConfig::wc_add_key_pos(const char *title, int len,
 		int pos, int height, int screen_height)
 {
-	struct fw_cfg_key key;
-	struct fw_cfg_value value, *f;
-
-	crc32sum(title, len, &key.crc32, &key.r_crc32);
-
-#ifdef FW_DEBUG
-	LOG("add key=%u[%s], pos=%d\n", key.crc32, title, pos);
-#endif
-
-	if (m_hash->sh_find(&key, (void **)&f) == _SHASH_FOUND) {
-		if (pos > 0) {
-			f->pos = pos;
-			f->height = height;
-			f->screen_height = screen_height;
-		}
-
-		return 0;
-	}
-
-	memset(&value, 0, sizeof(value));
-	value.pos = pos;
-	value.height = height;
-	value.screen_height = screen_height;
-
-	m_hash->sh_add(&key, &value);
-
-	return 0;
+	return m_bookmark->wbm_add_bookmark(title, len, pos, height, screen_height);
 }
 
-int WikiConfig::wc_find_key_pos(const char *title, int len, int *height, int *screen_height)
+int WikiConfig::wc_find_key_pos(const char *title, int len, bookmark_value_t *v)
 {
-	struct fw_cfg_key key;
-	struct fw_cfg_value *f;
-
-	*height = 1;
-	if (screen_height)
-		*screen_height = 0;
-
-	crc32sum(title, len, &key.crc32, &key.r_crc32);
-
-	if (m_hash->sh_find(&key, (void **)&f) == _SHASH_FOUND) {
-#ifdef FW_DEBUG
-		LOG("find key=%u[%s], pos=%d\n", key.crc32, title, f->pos);
-#endif
-		if (f->pos < 0 || f->height <= 0)
-			return 0;
-
-		*height = f->height;
-		if (screen_height)
-			*screen_height = f->screen_height;
-
-		return  f->pos;
-	}
-
-	return 0;
+	return m_bookmark->wbm_find_bookmark(title, len, v);
 }
 
 #define G *1024*1024*1024
@@ -567,11 +264,11 @@ int WikiConfig::wc_add_color(const char *bg, const char *fg, const char *link,
 {
 	color_t *p = &m_config->color[m_config->color_total];
 
-	str2rgb(&p->bg, bg);
-	str2rgb(&p->fg, fg);
-	str2rgb(&p->link, link);
-	str2rgb(&p->list_bg, list_bg);
-	str2rgb(&p->list_fg, list_fg);
+	strcpy(p->bg, bg);
+	strcpy(p->fg, fg);
+	strcpy(p->link, link);
+	strcpy(p->list_bg, list_bg);
+	strcpy(p->list_fg, list_fg);
 
 	m_config->color_total++;
 
@@ -612,9 +309,9 @@ int WikiConfig::wc_get_config(char bg[16], char fg[16], char link[16], int *font
 {
 	color_t *p = &m_config->color[m_config->color_index];
 
-	rgb2str(bg, &p->bg);
-	rgb2str(fg, &p->fg);
-	rgb2str(link, &p->link);
+	strcpy(bg, p->bg);
+	strcpy(fg, p->fg);
+	strcpy(link, p->link);
 
 	*font_size = m_config->font_size;
 
@@ -624,9 +321,9 @@ int WikiConfig::wc_get_config(char bg[16], char fg[16], char link[16], int *font
 int WikiConfig::wc_get_list_color(char *list_bg, char *list_fg)
 {
 	color_t *p = &m_config->color[m_config->color_index];
-	
-	rgb2str(list_bg, &p->list_bg);
-	rgb2str(list_fg, &p->list_fg);
+
+	strcpy(list_bg, p->list_bg);
+	strcpy(list_fg, p->list_fg);
 
 	return 0;
 }

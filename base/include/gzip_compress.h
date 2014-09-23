@@ -26,7 +26,7 @@ inline int gzip(char *out, int out_len, const char *in, int in_len)
 					(Bytef *)in, (unsigned long)in_len)) != Z_OK) ? -1 : (int)ret;
 }
 
-#if 1
+#ifndef FW_NJI
 
 inline int bzip2(char *out, int out_len, const char *in, int in_len)
 {

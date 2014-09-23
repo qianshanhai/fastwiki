@@ -124,6 +124,8 @@ class WikiManage {
 		WikiManage();
 		~WikiManage();
 
+		WikiConfig *wiki_get_config();
+
 		int wiki_init();
 		int wiki_reinit();
 		int wiki_exit();
@@ -142,7 +144,7 @@ class WikiManage {
 		int wiki_set_select_lang(int *idx, int len);
 
 		int wiki_base_url(char *buf);
-		int wiki_do_url(void *type, int sock, const char *url, int idx);
+		int wiki_do_url(void *type, int sock, HttpParse *http, int idx);
 
 		int wiki_conv_key(WikiIndex *wiki_index, const char *start, const char *key, int key_len, char *buf);
 		int wiki_split_content(int len);
@@ -162,19 +164,8 @@ class WikiManage {
 		int wiki_index_msg(char **buf, int *size);
 		int wiki_add_key_pos(int pos, int height, int screen_height);
 		int wiki_find_key_pos(int *pos, int *height);
-		int wiki_add_dir(const char *dir);
-
-		int wiki_get_fontsize();
-		int wiki_set_fontsize(int fontsize);
 
 		char *wiki_about();
-
-		int wiki_get_hide_menu_flag();
-		int wiki_set_hide_menu_flag();
-
-		int wiki_set_color_mode(int idx);
-		int wiki_get_color_mode();
-		int wiki_get_list_color(char *list_bg, char *list_fg);
 
 		int wiki_get_title_from_url(char idx[16][256], char title[16][256], const char *buf);
 		int wiki_view_index(int idx, char **buf, int *size);
@@ -200,9 +191,6 @@ class WikiManage {
 		int wiki_delete_history(int idx);
 		int wiki_clean_history();
 
-		int wiki_get_full_screen_flag();
-		int wiki_switch_full_screen();
-
 		int wiki_load_one_page_done();
 
 		int wiki_view_favorite(int idx, char **buf, int *size);
@@ -225,34 +213,8 @@ class WikiManage {
 		int wiki_sys_translate(const char *key, const char *lang, char **buf);
 		int wiki_translate(const char *key, char **buf);
 
-		int wiki_get_mutil_lang_list_mode();
-		int wiki_set_mutil_lang_list_mode(int mode);
-		int wiki_get_translate_show_line();
-		int wiki_set_translate_show_line(int x);
-
-		int wiki_get_use_language();
-		int wiki_set_use_language(int idx);
-
-		int wiki_get_home_page_flag();
-		int wiki_set_home_page_flag(int idx);
-
-		int wiki_set_random_flag(int idx);
-		int wiki_get_random_flag();
-
-		int wiki_get_need_translate();
-		int wiki_set_need_translate(int idx);
-
-		int wiki_get_translate_default(char *lang);
-		int wiki_set_translate_default(const char *lang);
-
 		int wiki_page_last_read(char **buf, int *size);
 		int wiki_scan_sdcard();
-
-		int wiki_get_body_image_flag();
-		int wiki_set_body_image_flag(int flag);
-
-		const char *wiki_get_body_image_path();
-		int wiki_set_body_image_path(const char *path);
 };
 
 #endif

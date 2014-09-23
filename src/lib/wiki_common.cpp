@@ -221,8 +221,10 @@ compress_func_t get_compress_func(int *flag, const char *str)
 		*flag = FM_FLAG_TEXT;
 		return NULL;
 	} else if (strcasecmp(str, "bzip2") == 0) {
+#ifndef FW_NJI
 		*flag = FM_FLAG_BZIP2;
 		return bzip2;
+#endif
 	} else if (strcasecmp(str, "gzip") == 0) {
 		*flag = FM_FLAG_GZIP;
 		return gzip;
@@ -246,9 +248,6 @@ compress_func_t get_decompress_func(int z_flag)
 	compress_func_t ret = NULL;
 
 	switch (z_flag) {
-		case FM_FLAG_BZIP2:
-			ret = bunzip2;
-			break;
 		case FM_FLAG_GZIP:
 			ret = gunzip;
 			break;
@@ -256,6 +255,9 @@ compress_func_t get_decompress_func(int z_flag)
 			ret = lz4_decompress;
 			break;
 #ifndef FW_NJI
+		case FM_FLAG_BZIP2:
+			ret = bunzip2;
+			break;
 		case FM_FLAG_LZO1X:
 			ret = lzo1x_decompress;
 			break;

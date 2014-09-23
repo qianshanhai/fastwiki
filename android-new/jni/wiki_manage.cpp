@@ -14,11 +14,11 @@
 #define INIT_CURR_TITLE()   m_curr_title[0] = 0
 #define SET_CURR_TITLE(key) strcpy(m_curr_title, key)
 
-static int _wiki_do_url(void *_class, void *type, int sock, const char *url, int idx)
+static int _wiki_do_url(void *_class, void *type, void *http, int sock, int idx)
 {
 	WikiManage *manage = (WikiManage *)_class;
 	
-	return manage->wiki_do_url(type, sock, url, idx);
+	return manage->wiki_do_url(type, sock, (HttpParse *)http, idx);
 }
 
 #define INIT_CURR_LANG() m_curr_lang = NULL
@@ -76,7 +76,7 @@ int WikiManage::wiki_init()
 	}
 
 	m_wiki_config = new WikiConfig();
-	m_wiki_config->wc_init(NULL);
+	m_wiki_config->wc_init();
 
 	m_wiki_socket = new WikiSocket();
 	m_wiki_socket->ws_init(NULL, _wiki_do_url, (void *)this);
@@ -131,7 +131,7 @@ int WikiManage::wiki_reinit()
 
 	INIT_CURR_LANG();
 
-	m_wiki_config->wc_init(NULL);
+	m_wiki_config->wc_init();
 	if (wiki_lang_init() == -1)
 		return -1;
 
@@ -151,6 +151,11 @@ int WikiManage::wiki_exit()
 	exit(0);
 
 	return 0;
+}
+
+WikiConfig *WikiManage::wiki_get_config()
+{
+	return m_wiki_config;
 }
 
 int WikiManage::wiki_add_lang(struct one_lang *p, const struct file_st *f)
@@ -278,13 +283,14 @@ int WikiManage::wiki_base_url(char *buf)
 	return 0;
 }
 
-int WikiManage::wiki_do_url(void *type, int sock, const char *url, int idx)
+int WikiManage::wiki_do_url(void *type, int sock, HttpParse *http, int idx)
 {
 	int len;
 	char *data = m_math_data[idx];
 	WikiSocket *ws;
 	
 	ws = (WikiSocket *)type;
+	const char *url = http->hp_url();
 
 	if (strncasecmp(url, "curr:", 5) == 0) {
 		struct content_split *p = &m_split_pos[atoi(url + 5) + 1];
@@ -481,7 +487,7 @@ int WikiManage::wiki_match(const char *start, wiki_title_t **buf, int *total)
 
 out:
 
-	if (wiki_get_mutil_lang_list_mode()) {
+	if (m_wiki_config->wc_get_mutil_lang_list_mode()) {
 		qsort(m_match_title, m_match_title_total, sizeof(wiki_title_t), _match_title_cmp);
 	}
 
@@ -624,7 +630,7 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 
 		m_curr_content[n] = 0;
 
-		if (wiki_get_need_translate()) {
+		if (m_wiki_config->wc_get_need_translate()) {
 			n = wiki_translate_format(m_curr_content, n, m_curr_page);
 			memcpy(m_curr_content, m_curr_page, n);
 			m_curr_content[n] = 0;
@@ -754,6 +760,7 @@ int WikiManage::wiki_find_key_pos(int *pos, int *height)
 	char title[256];
 	char *p = title;
 	int len;
+	bookmark_value_t bmv;
 
 	if (m_curr_title[0] == 0) {
 		*pos = 0;
@@ -772,41 +779,12 @@ int WikiManage::wiki_find_key_pos(int *pos, int *height)
 		p = m_curr_title;
 	}
 
-	*pos = m_wiki_config->wc_find_key_pos(p, len, height);
+	m_wiki_config->wc_find_key_pos(p, len, &bmv);
 
-	return *pos;
-}
+	*pos = bmv.pos;
+	*height = bmv.height;
 
-int WikiManage::wiki_add_dir(const char *dir)
-{
-	return m_wiki_config->wc_add_dir(dir);
-}
-
-int WikiManage::wiki_get_fontsize()
-{
-	return m_wiki_config->wc_get_fontsize();
-}
-
-/*
- * fontsize = -1 or 1
- * return -1: can't set font size
- */
-int WikiManage::wiki_set_fontsize(int fontsize)
-{
-	int n = 0;
-
-	if (m_wiki_config) {
-		n = m_wiki_config->wc_get_fontsize();
-		if (n <= 0)
-			n = 13;
-		if (n > 3 || fontsize > 0) {
-			n += fontsize;
-			m_wiki_config->wc_set_fontsize(n);
-			return n;
-		}
-	}
-
-	return n;
+	return bmv.pos;
 }
 
 int WikiManage::wiki_set_select_lang(int *idx, int len)
@@ -851,26 +829,6 @@ char *WikiManage::wiki_about()
 	buf[size] = 0;
 
 	return buf;
-}
-
-int WikiManage::wiki_get_hide_menu_flag()
-{
-	return m_wiki_config->wc_get_hide_menu_flag();
-}
-
-int WikiManage::wiki_set_hide_menu_flag()
-{
-	return m_wiki_config->wc_set_hide_menu_flag();
-}
-
-int WikiManage::wiki_get_color_mode()
-{
-	return m_wiki_config->wc_get_color_mode();
-}
-
-int WikiManage::wiki_set_color_mode(int idx)
-{
-	return m_wiki_config->wc_set_color_mode(idx);
 }
 
 char *WikiManage::wiki_curr_title()
@@ -1184,7 +1142,7 @@ int WikiManage::wiki_random_all_lang(char **buf, int *size)
 
 int WikiManage::wiki_random_page(char **buf, int *size)
 {
-	int n = -1, flag = wiki_get_random_flag();
+	int n = -1, flag = m_wiki_config->wc_get_random_flag();
 
 	switch (flag) {
 		case RANDOM_HISTORY:
@@ -1453,21 +1411,6 @@ int WikiManage::wiki_view_history(int idx, char **buf, int *size)
 	return *size;
 }
 
-int WikiManage::wiki_get_full_screen_flag()
-{
-	return m_wiki_config->wc_get_full_screen_flag();
-}
-
-int WikiManage::wiki_switch_full_screen()
-{
-	return m_wiki_config->wc_switch_full_screen();
-}
-
-int WikiManage::wiki_get_list_color(char *list_bg, char *list_fg)
-{
-	return m_wiki_config->wc_get_list_color(list_bg, list_fg);
-}
-
 int WikiManage::wiki_view_favorite(int idx, char **buf, int *size)
 {
 	int n;
@@ -1485,18 +1428,19 @@ int WikiManage::wiki_view_favorite(int idx, char **buf, int *size)
 
 int WikiManage::wiki_favorite_rate(const char *title, const char *lang, char *percent)
 {
-	int height, screen_height;
-	int pos = m_wiki_config->wc_find_key_pos(title, strlen(title), &height, &screen_height);
+	bookmark_value_t val;
 
-	if (pos == 0) {
+	m_wiki_config->wc_find_key_pos(title, strlen(title), &val);
+
+	if (val.pos == 0) {
 		strcpy(percent, "0%");
 		return 0;
 	}
 
-	if (height < 10 || pos + screen_height >= height) {
+	if (val.height < 10 || val.pos + val.screen_height >= val.height) {
 		strcpy(percent, "100%");
 	} else {
-		sprintf(percent, "%.0f%%", (float)(pos + screen_height) * 100.0 / (float)height);
+		sprintf(percent, "%.0f%%", (float)(val.pos + val.screen_height) * 100.0 / (float)val.height);
 	}
 
 	return 0;
@@ -1599,7 +1543,7 @@ int WikiManage::wiki_translate_find(struct one_lang *p, const char *key, char *b
 {
 	sort_idx_t idx[16];
 	int total,  len;
-	int show_line = wiki_get_translate_show_line();
+	int show_line = m_wiki_config->wc_get_translate_show_line();
 
 	if (p == NULL || p->index == NULL || p->data == NULL)
 		return 0;
@@ -1691,7 +1635,7 @@ int WikiManage::wiki_translate(const char *key, char **buf)
 	char lang[32];
 
 	memset(lang, 0, sizeof(lang));
-	wiki_get_translate_default(lang);
+	m_wiki_config->wc_get_translate_default(lang);
 
 	return wiki_sys_translate(key, lang, buf);
 }
@@ -1741,66 +1685,6 @@ struct one_lang *WikiManage::wiki_get_lang_addr(const char *lang)
 	return NULL;
 }
 
-int WikiManage::wiki_get_mutil_lang_list_mode()
-{
-	return m_wiki_config->wc_get_mutil_lang_list_mode();
-}
-
-int WikiManage::wiki_set_mutil_lang_list_mode(int mode)
-{
-	return m_wiki_config->wc_set_mutil_lang_list_mode(mode);
-}
-
-int WikiManage::wiki_get_translate_show_line()
-{
-	return m_wiki_config->wc_get_translate_show_line();
-}
-
-int WikiManage::wiki_set_translate_show_line(int x)
-{
-	return m_wiki_config->wc_set_translate_show_line(x);
-}
-
-int WikiManage::wiki_get_use_language()
-{
-	return m_wiki_config->wc_get_use_language();
-}
-
-int WikiManage::wiki_set_use_language(int idx)
-{
-	return m_wiki_config->wc_set_use_language(idx);
-}
-
-int WikiManage::wiki_set_home_page_flag(int idx)
-{
-	return m_wiki_config->wc_set_home_page_flag(idx);
-}
-
-int WikiManage::wiki_get_home_page_flag()
-{
-	return m_wiki_config->wc_get_home_page_flag();
-}
-
-int WikiManage::wiki_set_need_translate(int idx)
-{
-	return m_wiki_config->wc_set_need_translate(idx);
-}
-
-int WikiManage::wiki_get_need_translate()
-{
-	return m_wiki_config->wc_get_need_translate();
-}
-
-int WikiManage::wiki_get_translate_default(char *lang)
-{
-	return m_wiki_config->wc_get_translate_default(lang);
-}
-
-int WikiManage::wiki_set_translate_default(const char *lang)
-{
-	return m_wiki_config->wc_set_translate_default(lang);
-}
-
 int WikiManage::wiki_scan_sdcard()
 {
 	m_wiki_config->wc_scan_all();
@@ -1810,35 +1694,4 @@ int WikiManage::wiki_scan_sdcard()
 		m_init_flag = 1;
 
 	return 0;
-}
-
-int WikiManage::wiki_set_random_flag(int idx)
-{
-	return m_wiki_config->wc_set_random_flag(idx);
-}
-
-int WikiManage::wiki_get_random_flag()
-{
-	return m_wiki_config->wc_get_random_flag();
-}
-
-
-int WikiManage::wiki_get_body_image_flag()
-{
-	return m_wiki_config->wc_get_body_image_flag();
-}
-
-int WikiManage::wiki_set_body_image_flag(int flag)
-{
-	return m_wiki_config->wc_set_body_image_flag(flag);
-}
-
-const char *WikiManage::wiki_get_body_image_path()
-{
-	return m_wiki_config->wc_get_body_image_path();
-}
-
-int WikiManage::wiki_set_body_image_path(const char *path)
-{
-	return m_wiki_config->wc_set_body_image_path(path);
 }

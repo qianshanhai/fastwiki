@@ -13,9 +13,9 @@ enum {
 };
 
 #define MAX_FD_TOTAL 64
+typedef char fw_files_t[MAX_FD_TOTAL][128]; 
 
 typedef int (*compress_func_t)(char *out, int out_len, const char *in, int in_len);
-typedef char fw_files_t[MAX_FD_TOTAL][128]; 
 
 #ifdef __cplusplus
 extern "C" {

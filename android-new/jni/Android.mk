@@ -4,10 +4,12 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE    := fastwiki
 LOCAL_SRC_FILES := \
+	wiki_bookmark.cpp \
 	wiki_config.cpp \
 	wiki_common.cpp \
 	wiki_history.cpp \
 	wiki_favorite.cpp \
+	wiki_scan_file.cpp \
 	wiki_socket.cpp \
 	wiki_local.cpp \
 	wiki_data.cpp \

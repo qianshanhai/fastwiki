@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 static WikiManage *m_wiki_manage = NULL;
+static WikiConfig *m_wiki_config = NULL;
 
 jstring
 Java_com_hace_fastwiki_FastWikiAbout_WikiAbout(JNIEnv* env, jobject thiz)
@@ -30,30 +31,11 @@ Java_com_hace_fastwiki_FastWikiAbout_WikiAbout(JNIEnv* env, jobject thiz)
 }
 
 jstring
-Java_com_hace_fastwiki_MyFileManager_N(JNIEnv* env, jobject thiz, jstring flag)
-{
-	const char *tmp = my_get_string(flag);
-
-	return env->NewStringUTF(local_msg(tmp));
-}
-
-jstring
 Java_com_hace_fastwiki_FastWiki_N(JNIEnv* env, jobject thiz, jstring flag)
 {
 	const char *tmp = my_get_string(flag);
 
 	return env->NewStringUTF(local_msg(tmp));
-}
-
-jint
-Java_com_hace_fastwiki_FastWiki_IsValidDir(JNIEnv* env, jobject thiz, jstring dir)
-{
-	const char *tmp = my_get_string(dir);
-
-	if (m_wiki_manage->wiki_add_dir(tmp) == -1)
-		return 0;
-
-	return 1;
 }
 
 void
@@ -135,9 +117,14 @@ extern "C" int LOG(const char *fmt, ...);
 jint
 Java_com_hace_fastwiki_FastWiki_WikiInit(JNIEnv* env, jobject thiz)
 {
+	int n;
+
 	m_wiki_manage = new WikiManage();
 
-	return m_wiki_manage->wiki_init() == -1 ? 0 : 1;
+	n = m_wiki_manage->wiki_init() == -1 ? 0 : 1;
+	m_wiki_config = m_wiki_manage->wiki_get_config();
+
+	return n;
 }
 
 jint
@@ -296,7 +283,7 @@ Java_com_hace_fastwiki_FastWiki_WikiMatchLang(JNIEnv* env, jobject thiz)
 int
 Java_com_hace_fastwiki_FastWiki_WikiGetFontSize(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_fontsize();
+	return m_wiki_config->wc_get_fontsize();
 }
 
 /*
@@ -305,7 +292,7 @@ Java_com_hace_fastwiki_FastWiki_WikiGetFontSize(JNIEnv* env, jobject thiz)
 int
 Java_com_hace_fastwiki_FastWiki_WikiSetFontSize(JNIEnv* env, jobject thiz, jint n)
 {
-	return m_wiki_manage->wiki_set_fontsize(n);
+	return m_wiki_config->wc_set_fontsize(n);
 }
 
 jstring
@@ -487,37 +474,37 @@ Java_com_hace_fastwiki_FastWiki_GetTimeOfDay(JNIEnv* env, jobject thiz)
 jint
 Java_com_hace_fastwiki_FastWiki_WikiSetHideMenuFlag(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_set_hide_menu_flag();
+	return m_wiki_config->wc_set_hide_menu_flag();
 }
 
 jint
 Java_com_hace_fastwiki_FastWiki_WikiGetHideMenuFlag(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_hide_menu_flag();
+	return m_wiki_config->wc_get_hide_menu_flag();
 }
 
 jint
 Java_com_hace_fastwiki_FastWiki_WikiCurrColorMode(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_color_mode();
+	return m_wiki_config->wc_get_color_mode();
 }
 
 jint
 Java_com_hace_fastwiki_FastWiki_WikiSetColorMode(JNIEnv* env, jobject thiz, jint idx)
 {
-	return m_wiki_manage->wiki_set_color_mode(idx);
+	return m_wiki_config->wc_set_color_mode(idx);
 }
 
 jint
 Java_com_hace_fastwiki_FastWiki_WikiGetFullScreenFlag(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_full_screen_flag();
+	return m_wiki_config->wc_get_full_screen_flag();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_WikiSwitchFullScreen(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_switch_full_screen();
+	return m_wiki_config->wc_switch_full_screen();
 }
 
 jint
@@ -557,7 +544,7 @@ Java_com_hace_fastwiki_FastWiki_WikiListColor(JNIEnv* env, jobject thiz)
 
 	jobjectArray args = env->NewObjectArray(2, env->FindClass("java/lang/String"), 0);
 
-	m_wiki_manage->wiki_get_list_color(list_bg, list_fg);
+	m_wiki_config->wc_get_list_color(list_bg, list_fg);
 
 	env->SetObjectArrayElement(args, 0, env->NewStringUTF(list_bg));
 	env->SetObjectArrayElement(args, 1, env->NewStringUTF(list_fg));
@@ -739,73 +726,73 @@ Java_com_hace_fastwiki_FastWiki_TransLate(JNIEnv* env, jobject thiz, jstring fla
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetMutilLangListMode(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_mutil_lang_list_mode();
+	return m_wiki_config->wc_get_mutil_lang_list_mode();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetMutilLangListMode(JNIEnv* env, jobject thiz, jint mode)
 {
-	return m_wiki_manage->wiki_set_mutil_lang_list_mode(mode);
+	return m_wiki_config->wc_set_mutil_lang_list_mode(mode);
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetTranslateShowLine(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_translate_show_line();
+	return m_wiki_config->wc_get_translate_show_line();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetTranslateShowLine(JNIEnv* env, jobject thiz, jint x)
 {
-	return m_wiki_manage->wiki_set_translate_show_line(x);
+	return m_wiki_config->wc_set_translate_show_line(x);
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetUseLanguage(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_use_language();
+	return m_wiki_config->wc_get_use_language();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetUseLanguage(JNIEnv* env, jobject thiz, jint idx)
 {
-	return m_wiki_manage->wiki_set_use_language(idx);
+	return m_wiki_config->wc_set_use_language(idx);
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetHomePageFlag(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_home_page_flag();
+	return m_wiki_config->wc_get_home_page_flag();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetHomePageFlag(JNIEnv* env, jobject thiz, jint flag)
 {
-	return m_wiki_manage->wiki_set_home_page_flag(flag);
+	return m_wiki_config->wc_set_home_page_flag(flag);
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetRandomFlag(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_random_flag();
+	return m_wiki_config->wc_get_random_flag();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetRandomFlag(JNIEnv* env, jobject thiz, jint flag)
 {
-	return m_wiki_manage->wiki_set_random_flag(flag);
+	return m_wiki_config->wc_set_random_flag(flag);
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetNeedTranslate(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_need_translate();
+	return m_wiki_config->wc_get_need_translate();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetNeedTranslate(JNIEnv* env, jobject thiz, jint flag)
 {
-	return m_wiki_manage->wiki_set_need_translate(flag);
+	return m_wiki_config->wc_set_need_translate(flag);
 }
 
 jstring
@@ -813,7 +800,7 @@ Java_com_hace_fastwiki_FastwikiSetting_TranslateDefault(JNIEnv* env, jobject thi
 {
 	char lang[32];
 
-	m_wiki_manage->wiki_get_translate_default(lang);
+	m_wiki_config->wc_get_translate_default(lang);
 
 	return env->NewStringUTF(lang);
 }
@@ -827,31 +814,31 @@ Java_com_hace_fastwiki_FastwikiSetting_WikiLangList(JNIEnv* env, jobject thiz)
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetTranslateDefault(JNIEnv* env, jobject thiz, jstring lang)
 {
-	return m_wiki_manage->wiki_set_translate_default(my_get_string(lang));
+	return m_wiki_config->wc_set_translate_default(my_get_string(lang));
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_GetBodyImageFlag(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_get_body_image_flag();
+	return m_wiki_config->wc_get_body_image_flag();
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetBodyImageFlag(JNIEnv* env, jobject thiz, jint flag)
 {
-	return m_wiki_manage->wiki_set_body_image_flag(flag);
+	return m_wiki_config->wc_set_body_image_flag(flag);
 }
 
 jint
 Java_com_hace_fastwiki_FastwikiSetting_SetBodyImagePath(JNIEnv* env, jobject thiz, jstring path)
 {
-	return m_wiki_manage->wiki_set_body_image_path(my_get_string(path));
+	return m_wiki_config->wc_set_body_image_path(my_get_string(path));
 }
 
 jstring
 Java_com_hace_fastwiki_FastwikiSetting_GetBodyImagePath(JNIEnv* env, jobject thiz)
 {
-	return env->NewStringUTF(m_wiki_manage->wiki_get_body_image_path());
+	return env->NewStringUTF(m_wiki_config->wc_get_body_image_path());
 }
 
 int _cmp_file_name(const void *a, const void *b)

@@ -10,70 +10,30 @@
 
 #include "s_hash.h"
 
+#include "wiki_bookmark.h"
+#include "wiki_scan_file.h"
 #include "wiki_common.h"
 #include "wiki-httpd.h"
 
 #define BASE_DIR "/sdcard/hace/fastwiki"
-#define WK_DAT_PREFIX "fastwiki.dat."
-#define WK_IDX_PREFIX "fastwiki.idx."
-#define WK_MATH_PREFIX "fastwiki.math."
-#define WK_IMAGE_PREFIX "fastwiki.image."
-
 #define LOG_FILE BASE_DIR "/" "fastwiki.log"
 
-#define CFG_NEW_FILE "fastwiki3.cfg"
+#define CFG_NEW_FILE "fastwiki31.cfg"
 
 #define FW_VIEW_SIZE_G  (1024*1024*1024)
 
-#define CHECK_CONFIG_SIZE() \
-	do { \
-		if (sizeof(fw_config_t) >= SHASH_USER_DATA_LEN) { \
-			printf("error: sizeof(fw_config_t) = %d >> USER_DATA_LEN=%d\n", (int)sizeof(fw_config_t), (int)SHM_HASH_USER_DATA_LEN); \
-			fflush(stdout); \
-			exit(0); \
-		} \
-	} while (0)
-			
 typedef struct {
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
-} rgb_t;
-
-inline char *rgb2str(char *buf, const rgb_t *p)
-{
-	sprintf(buf, "#%02X%02X%02X", (int)p->r, (int)p->g, (int)p->b);
-
-	return buf;
-}
-
-inline rgb_t *str2rgb(rgb_t *p, const char *s)
-{
-	if (*s == '#')
-		s++;
-
-	p->r = hex2ch(s);
-	p->g = hex2ch(s + 2);
-	p->b = hex2ch(s + 4);
-
-	return p;
-}
-
-typedef struct {
-	rgb_t bg;
-	rgb_t fg;
-	rgb_t link;
-	rgb_t list_bg;
-	rgb_t list_fg;
-	rgb_t reserve[1+2];
+	char bg[8];
+	char fg[8];
+	char link[8];
+	char list_bg[8];
+	char list_fg[8];
+	char reserve[64];
 } color_t;
 
-#define MAX_COLOR_TOTAL 8
-#define MAX_FD_TOTAL 32
-#define MAX_TMP_DIR_TOTAL 128
-#define MAX_FW_DIR_TOTAL 10
-#define MAX_FW_DIR_LEN   80
-#define MAX_SELECT_LANG_TOTAL 30
+#define MAX_COLOR_TOTAL 16
+#define MAX_SELECT_LANG_TOTAL 128
+#define MAX_LANG_TOTAL 128
 
 enum {
 	HOME_PAGE_BLANK = 0,
@@ -91,85 +51,45 @@ enum {
 typedef struct {
 	int version;
 	unsigned int crc32;
-	char select_lang[MAX_SELECT_LANG_TOTAL][24];
-	int  select_lang_total;
-	int  mutil_lang_list_mode; /* =0 output sort by lang, =1 output sort by title */ 
-	char use_language[24];
-	char body_image_path[48];
 	int font_size;
+	int  mutil_lang_list_mode; /* =0 output sort by lang, =1 output sort by title */ 
+	int hide_menu_flag; /* =1 hide, =0 show */
 	unsigned int view_size_g; /* with G */
 	unsigned int view_size_byte; /* with byte */
 	unsigned int view_total; 
 	unsigned int home_page; /* HOME_PAGE_ */
 	unsigned int random_flag; /* RANDOM_ */
 	unsigned int body_image_flag; /* =1 use body image, =0 none */
-	char r1[36];
-	int hide_menu_flag; /* =1 hide, =0 show */
-	int color_index; /* 0 = */
-	int color_total;
-	color_t color[MAX_COLOR_TOTAL];
 	int full_screen_flag; /* 1 = full screen */
 	int translate_flag;   /* =1 enable, =0 disable */
 	int translate_show_line; /* default = 6 */
+	int color_index; /* 0 = */
+	int color_total;
+	color_t color[MAX_COLOR_TOTAL];
 	char default_trans_lang[24];
+	char body_image_path[128];
+	fw_dir_t base_dir[256];
 	int dir_total;
-	char base_dir[MAX_FW_DIR_TOTAL][MAX_FW_DIR_LEN];
+	char select_lang[MAX_SELECT_LANG_TOTAL][24];
+	int  select_lang_total;
+	char use_language[24];
 } fw_config_t;
-
-struct fw_cfg_key {
-	unsigned int crc32;
-	unsigned int r_crc32;
-};
-
-struct fw_cfg_value {
-	int pos;
-	int height;
-	int screen_height;
-	unsigned char read_total;
-	char reserve[7];
-};
-
-typedef char fw_files_t[MAX_FD_TOTAL][128];
-
-struct file_st {
-	fw_files_t data_file;
-	int data_total;
-
-	char index_file[128];
-	char math_file[128];
-
-	fw_files_t image_file;
-	int image_total;
-
-	int flag; /* =1 valid, =0 invalid */
-
-	char lang[32];
-};
-
-#define MAX_LANG_TOTAL 128
-
-typedef char tmp_dir_t[MAX_TMP_DIR_TOTAL][MAX_FW_DIR_LEN];
-
-class WikiConfig;
 
 class WikiConfig {
 	private:
 		fw_config_t *m_config;
-		SHash *m_hash;
-
-		int m_read_dir_count;
+		WikiBookmark *m_bookmark;
 
 		struct file_st m_file[MAX_LANG_TOTAL];
 		int m_file_total;
 
-		tmp_dir_t m_tmp_dir;
-		int m_tmp_dir_total;
+		WikiScanFile *m_scan_file;
 
 	public:
 		WikiConfig();
 		~WikiConfig();
 
-		int wc_init(const char *dir);
+		int wc_init();
 		int wc_get_fontsize();
 		int wc_set_fontsize(int fontsize);
 		int wc_add_dir(const char *dir);
@@ -177,9 +97,8 @@ class WikiConfig {
 		int wc_check_lang();
 		int wc_get_lang_list(char lang[MAX_SELECT_LANG_TOTAL][24], int *lang_total, struct file_st **ret = NULL, int *total = NULL);
 
-		int wc_add_key_pos(const char *title, int len,
-					int pos, int height, int screen_height);
-		int wc_find_key_pos(const char *title, int len, int *height, int *screen_height = NULL);
+		int wc_add_key_pos(const char *title, int len, int pos, int height, int screen_height);
+		int wc_find_key_pos(const char *title, int len, bookmark_value_t *v);
 
 		void wc_add_view_size(int size);
 		void wc_add_view_total(int total = 1);
@@ -223,13 +142,7 @@ class WikiConfig {
 		int wc_get_translate_default(char *lang);
 		int wc_set_translate_default(const char *lang);
 
-		int wc_merge_tmp_dir_first(int flag, tmp_dir_t tmp, int tmp_total, tmp_dir_t to, int *to_total,
-					int (*cmp)(const char *a, const char *b, int len, char *buf));
-		int wc_merge_tmp_dir();
-		int wc_clean_tmp_dir();
-		int wc_add_tmp_dir(const char *dir);
 		int wc_scan_all();
-		int wc_scan_sdcard(const char *dir, int flag);
 
 		int wc_get_random_flag();
 		int wc_set_random_flag(int mode);
@@ -240,14 +153,8 @@ class WikiConfig {
 		int wc_set_body_image_path(const char *path);
 
 	private:
-		int wc_init_config(const char *file);
+		int wc_init_config();
 		int wc_init_lang();
-
-		struct file_st *wc_get_file_st(const char *lang);
-		int wc_scan_lang(const char *dir, const char *fname);
-		int wc_scan_dir(const char *dir, 
-					int (WikiConfig::*func)(const char *dir, const char *fname));
-		int wc_add_lang(int flag_idx, const char *lang);
 };
 
 extern "C" {
