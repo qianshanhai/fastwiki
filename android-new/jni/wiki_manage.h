@@ -13,14 +13,10 @@
 #include "wiki_index.h"
 #include "wiki_math.h"
 #include "wiki_image.h"
+#include "wiki_full_index.h"
 #include "wiki_history.h"
 
 #define MAX_PTHREAD_TOTAL 5
-
-/* status */
-#define STATUS_MATCH_KEY 0x1
-#define STATUS_CONTENT 0x2
-#define STATUS_NOT_FOUND 0x4
 
 #define NOT_FOUND "Not found."
 
@@ -36,14 +32,17 @@ struct lang_list {
 };
 
 struct one_lang {
+	int flag;
+	char lang[64];
+	data_head_t data_head;
 	WikiData *data;
 	WikiIndex *index;
 	WikiMath *math;
 	WikiImage *image;
-	data_head_t data_head;
-	char lang[64];
-	int flag;
+	WikiFullIndex *full_index;
 };
+
+#define MAX_PAGE_IDX_TOTAL 10000
 
 #define MAX_TMP_HISTORY_TOTAL 4096
 #define MAX_TMP_FAVORITE_TOTAL 4096
@@ -60,13 +59,35 @@ struct tmp_favorite {
 
 typedef struct {
 	char title[256];
+	char key[128];
 	sort_idx_t idx;
 	struct one_lang *which;
 } wiki_title_t;
 
+struct page_pos {
+	int start;
+	int end;
+	struct one_lang *which;
+};
+
+typedef struct {
+	char key[256];
+	int *page_idx;
+	int curr_page;
+	int page_total;
+	int all_total;
+	struct page_pos page_pos[MAX_SELECT_LANG_TOTAL];
+	int pos_total;
+} full_search_t;
+
 #define MAX_MATCH_TITLE_TOTAL (MAX_FIND_RECORD * 10 + 1)
 
 #define CURR_WIKI(x) m_curr_lang->x
+
+#define for_each_select_lang(x) \
+	wiki_init_all_lang(); \
+	struct one_lang *x; \
+	for (int i = 0; i < m_select_lang_total && (x = wiki_get_lang_addr(m_select_lang[i])) != NULL; i++)
 
 class WikiManage {
 	private:
@@ -118,6 +139,8 @@ class WikiManage {
 		struct tmp_favorite *m_favorite;
 		int m_favorite_total;
 
+		full_search_t m_search_buf;
+
 		int m_init_flag;
 
 	public:
@@ -146,7 +169,6 @@ class WikiManage {
 		int wiki_base_url(char *buf);
 		int wiki_do_url(void *type, int sock, HttpParse *http, int idx);
 
-		int wiki_conv_key(WikiIndex *wiki_index, const char *start, const char *key, int key_len, char *buf);
 		int wiki_split_content(int len);
 
 		int wiki_read_data(const sort_idx_t *p, char **buf, const char *title);
@@ -215,6 +237,14 @@ class WikiManage {
 
 		int wiki_page_last_read(char **buf, int *size);
 		int wiki_scan_sdcard();
+
+		int wiki_full_search(const char *key, char **buf, int *size, int page);
+		int wiki_full_search_one_page(char **buf, int *size, int page);
+		struct one_lang *wiki_full_search_find_lang(int idx);
+		int wiki_check_full_search(const char *key);
+		int wiki_init_all_lang();
+		int wiki_full_search_update(const char *key);
+		int wiki_parse_url_full_search(const char *url, char *flag, char *title, char **data);
 };
 
 #endif

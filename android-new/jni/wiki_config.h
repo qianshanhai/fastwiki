@@ -18,7 +18,7 @@
 #define BASE_DIR "/sdcard/hace/fastwiki"
 #define LOG_FILE BASE_DIR "/" "fastwiki.log"
 
-#define CFG_NEW_FILE "fastwiki31.cfg"
+#define CFG_NEW_FILE "fastwiki32.cfg"
 
 #define FW_VIEW_SIZE_G  (1024*1024*1024)
 
@@ -48,6 +48,12 @@ enum {
 	RANDOM_ALL_LANG,
 };
 
+enum {
+	FULL_TEXT_SHOW_SOME = 0,
+	FULL_TEXT_SHOW_TITLE,
+	FULL_TEXT_SHOW_ALL,
+};
+
 typedef struct {
 	int version;
 	unsigned int crc32;
@@ -73,6 +79,8 @@ typedef struct {
 	char select_lang[MAX_SELECT_LANG_TOTAL][24];
 	int  select_lang_total;
 	char use_language[24];
+	int full_text_show;
+	char r[10*1024];
 } fw_config_t;
 
 class WikiConfig {
@@ -83,8 +91,7 @@ class WikiConfig {
 		struct file_st m_file[MAX_LANG_TOTAL];
 		int m_file_total;
 
-		WikiScanFile *m_scan_file;
-
+		WikiScanFile *m_scan_file; 
 	public:
 		WikiConfig();
 		~WikiConfig();
@@ -146,6 +153,8 @@ class WikiConfig {
 
 		int wc_get_random_flag();
 		int wc_set_random_flag(int mode);
+		int wc_get_full_text_show();
+		int wc_set_full_text_show(int idx);
 
 		int wc_get_body_image_flag();
 		int wc_set_body_image_flag(int flag);

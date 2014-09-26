@@ -14,6 +14,7 @@ LOCAL_SRC_FILES := \
 	wiki_local.cpp \
 	wiki_data.cpp \
 	wiki_index.cpp \
+	wiki_full_index.cpp \
 	wiki_zh.cpp \
 	wiki_math.cpp \
 	wiki_image.cpp \

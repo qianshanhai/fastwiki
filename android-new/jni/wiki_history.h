@@ -10,7 +10,8 @@
 /* status */
 #define STATUS_MATCH_KEY 0x1
 #define STATUS_CONTENT 0x2
-#define STATUS_NOT_FOUND 0x4
+#define STATUS_FULL_TEXT 0x4
+#define STATUS_NOT_FOUND 0x8
 
 typedef struct history_key {
 	char title[120];

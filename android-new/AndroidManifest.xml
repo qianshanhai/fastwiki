@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="com.hace.fastwiki"
       android:versionCode="32"
-      android:versionName="3.0 beta4">
+      android:versionName="3.0_beta5">
 
 	  <supports-screens
 		  android:xlargeScreens="true"

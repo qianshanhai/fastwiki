@@ -1,0 +1,1 @@
+../../src/lib/wiki_full_index.cpp

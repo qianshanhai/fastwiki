@@ -209,10 +209,30 @@ public class FastwikiSetting extends SherlockActivity {
 		});
 
 		translate_line();
-
 		set_body_image();
+		set_full_text();
 
 		init_full_screen();
+	}
+
+	private void set_full_text()
+	{
+		TextView text = (TextView)findViewById(R.id.full_search_text);
+		text.setText(N("FULL_SEARCH_TEXT"));
+
+		String [] f = {
+			N("FULL_TEXT_SHOW_SOME"),
+			N("FULL_TEXT_SHOW_TITLE"),
+			N("FULL_TEXT_SHOW_ALL"),
+		};
+		Spinner spin = new_spinner(R.id.full_search_set, f, GetFullTextShow()); 
+		spin.setOnItemSelectedListener(new OnItemSelectedListener() {
+			public void onItemSelected(AdapterView<?> arg0, View arg1, int idx, long arg3) {  
+				SetFullTextShow(idx);
+			}  
+			public void onNothingSelected(AdapterView<?> arg0) {  
+			}  
+		}); 
 	}
 
 	private void set_body_image()
@@ -395,4 +415,7 @@ public class FastwikiSetting extends SherlockActivity {
 
 	public native String GetBodyImagePath();
 	public native int SetBodyImagePath(String m);
+
+	public native int GetFullTextShow();
+	public native int SetFullTextShow(int idx);
 }

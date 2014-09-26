@@ -112,8 +112,6 @@ Java_com_hace_fastwiki_FastWiki_WikiReInit(JNIEnv* env, jobject thiz)
 	return m_wiki_manage->wiki_reinit() == -1 ? 0 : 1;
 }
 
-extern "C" int LOG(const char *fmt, ...);
-
 jint
 Java_com_hace_fastwiki_FastWiki_WikiInit(JNIEnv* env, jobject thiz)
 {
@@ -268,11 +266,10 @@ Java_com_hace_fastwiki_FastWiki_WikiMatchLang(JNIEnv* env, jobject thiz)
 	args = env->NewObjectArray(total, env->FindClass("java/lang/String"),0);
 
 	for (int i = 0; i < total; i++) {
-		if (flag > 1) {
-			str = env->NewStringUTF(buf[i].which->lang);
-		} else {
+		if (i == 0 || flag == 0 || buf[i].which == NULL)
 			str = env->NewStringUTF("");
-		}
+		else
+			str = env->NewStringUTF(buf[i].which->lang);
 
 		env->SetObjectArrayElement(args, i, str);
 	}
@@ -426,7 +423,7 @@ Java_com_hace_fastwiki_FastWiki_WikiParseUrl(JNIEnv* env, jobject thiz, jstring 
 	jobjectArray args;
 	jstring str;
 	const char *url = my_get_string(_url);
-	char flag[8], title[256], *data = NULL;
+	char flag[8], title[256] = {0}, *data = NULL;
 	const char *buf[3] = {flag, title, NULL};
 
 	args = env->NewObjectArray(3, env->FindClass("java/lang/String"), 0);
@@ -781,6 +778,18 @@ jint
 Java_com_hace_fastwiki_FastwikiSetting_SetRandomFlag(JNIEnv* env, jobject thiz, jint flag)
 {
 	return m_wiki_config->wc_set_random_flag(flag);
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_GetFullTextShow(JNIEnv* env, jobject thiz)
+{
+	return m_wiki_config->wc_get_full_text_show();
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetFullTextShow(JNIEnv* env, jobject thiz, jint flag)
+{
+	return m_wiki_config->wc_set_full_text_show(flag);
 }
 
 jint

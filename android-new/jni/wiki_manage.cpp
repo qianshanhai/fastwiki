@@ -60,7 +60,10 @@ int WikiManage::wiki_init()
 	gettimeofday(&now, NULL);
 	srand(now.tv_sec | now.tv_usec);
 
-	m_buf = (char *)malloc(32*1024);
+	memset(&m_search_buf, 0, sizeof(m_search_buf));
+	m_search_buf.page_idx = (int *)calloc(MAX_PAGE_IDX_TOTAL, sizeof(int));
+
+	m_buf = (char *)malloc(2*1024*1024);
 	m_trans_buf = (char *)malloc(MAX_TRANS_BUF_SIZE);
 
 	m_curr_content = (char *)malloc(2*1024*1024);
@@ -166,6 +169,7 @@ int WikiManage::wiki_add_lang(struct one_lang *p, const struct file_st *f)
 	p->index = new WikiIndex();
 	p->math = new WikiMath();
 	p->image = new WikiImage();
+	p->full_index = new WikiFullIndex();
 
 	if (p->data->wd_init(f->data_file, f->data_total) == -1) {
 		for (int i = 0; i < f->data_total; i++) {
@@ -183,6 +187,7 @@ int WikiManage::wiki_add_lang(struct one_lang *p, const struct file_st *f)
 
 	p->math->wm_init(f->math_file);
 	p->image->we_init(f->image_file, f->image_total);
+	p->full_index->wfi_init(f->fidx_file, f->fidx_file_total);
 
 	p->flag = 1;
 
@@ -219,6 +224,7 @@ struct one_lang *WikiManage::wiki_init_one_lang2(const struct file_st *f)
 	}
 
 	p = &m_all_lang[m_all_lang_total++];
+	memset(p, 0, sizeof(*p));
 
 	if (wiki_add_lang(p, f) == -1) {
 		if (m_all_lang_total > 0)
@@ -287,9 +293,7 @@ int WikiManage::wiki_do_url(void *type, int sock, HttpParse *http, int idx)
 {
 	int len;
 	char *data = m_math_data[idx];
-	WikiSocket *ws;
-	
-	ws = (WikiSocket *)type;
+	WikiSocket *ws = (WikiSocket *)type;
 	const char *url = http->hp_url();
 
 	if (strncasecmp(url, "curr:", 5) == 0) {
@@ -381,43 +385,6 @@ not_found:
 	return 0;
 }
 
-int WikiManage::wiki_conv_key(WikiIndex *wiki_index, const char *start, const char *key, int key_len, char *buf)
-{
-	int len, len2, found;
-	char tmp[KEY_SPLIT_LEN][MAX_KEY_LEN];
-	char tmp2[KEY_SPLIT_LEN][MAX_KEY_LEN];
-	int size = 0;
-	char space[4];
-
-	space[1] = 0;
-
-	memset(tmp, 0, sizeof(tmp));
-	memset(tmp2, 0, sizeof(tmp2));
-
-	wiki_index->wi_split_key(key, key_len, tmp, &len);
-	wiki_index->wi_split_key(start, strlen(start), tmp2, &len2);
-
-	for (int i = 0; i < len; i++) {
-		found = 0;
-		for (int j = 0; j < len2; j++) {
-			if (my_strcmp(tmp[i], tmp2[j], 0) == 0) {
-				found = 1;
-				break;
-			}
-		}
-		space[0] = (tmp[i][0] & 0x80) ? 0 : ' ';
-
-		if (found == 0) {
-			size += sprintf(buf + size, "%s%s", tmp[i], space);
-		} else {
-			size += sprintf(buf + size, "<font color=red>%s</font>%s", tmp[i], space);
-		}
-	}
-	buf[size] = 0;
-
-	return 0;
-}
-
 int _match_title_cmp(const void *a, const void *b)
 {
 	wiki_title_t *pa = (wiki_title_t *)a;
@@ -435,24 +402,23 @@ int WikiManage::wiki_match(const char *start, wiki_title_t **buf, int *total)
 	if (m_init_flag == 0)
 		return 0;
 
+	wiki_title_t *wt = &m_match_title[m_match_title_total++];
+
+	memset(wt, 0, sizeof(*wt));
+	strncpy(wt->key, start, sizeof(wt->key) - 1);
+	snprintf(wt->title, sizeof(wt->title), "%s: %s", _("FULL_SEARCH_MSG"), start);
+
 	/* TODO */
 	strncpy(m_curr_match_key, start, sizeof(m_curr_match_key) - 1);
 
 	int len, flag;
-	struct one_lang *which;
 	WikiIndex *wiki_index;
 	sort_idx_t sort_idx[MAX_FIND_RECORD + 1];
 
 	char key[512], tmp[2048];
 	char *title;
 
-	for (int i = 0; i < m_select_lang_total; i++) {
-		if ((which = wiki_get_lang_addr(m_select_lang[i])) == NULL) {
-			wiki_init_one_lang(m_select_lang[i], 0);
-			if ((which = wiki_get_lang_addr(m_select_lang[i])) == NULL) {
-				return -1;
-			}
-		}
+	for_each_select_lang(which) {
 		wiki_index = which->index;
 
 		flag = 0;
@@ -469,7 +435,7 @@ int WikiManage::wiki_match(const char *start, wiki_title_t **buf, int *total)
 			wiki_index->wi_get_key(p, key);
 
 			if (flag) {
-				wiki_conv_key(wiki_index, start, key, (int)p->key_len, tmp);
+				wiki_convert_key(wiki_index, start, key, (int)p->key_len, tmp);
 				title = tmp;
 			} else
 				title = key;
@@ -684,20 +650,20 @@ int WikiManage::wiki_not_found(char **buf, int *size, const char *str)
 	m_wiki_config->wc_get_config(bg, fg, link, &font_size);
 	sprintf(bg_str, "background:%s;\n", bg);
 
-	m_buf_len = sprintf(m_buf, WIKI_START_HTML,
+	int len = sprintf(m_buf, WIKI_START_HTML,
 			m_wiki_config->wc_get_body_image_flag() ? "" : bg_str,
 			fg, font_size, link,
 			m_wiki_socket->ws_get_bind_port(), 0, 0, 1,
 			m_wiki_config->wc_get_body_image_flag() ? " background=\"B.body.png\"" : "");
 
-	m_buf_len += sprintf(m_buf + m_buf_len, "%s%s", str, WIKI_HTTP_END_HTML);
+	len += sprintf(m_buf + len, "%s%s", str, WIKI_HTTP_END_HTML);
 
-	m_buf[m_buf_len] = 0;
+	m_buf[len] = 0;
 
 	*buf = m_buf;
-	*size = m_buf_len;
+	*size = len;
 
-	return m_buf_len;
+	return len;
 }
 
 int WikiManage::wiki_view_index(int idx, char **buf, int *size)
@@ -708,12 +674,17 @@ int WikiManage::wiki_view_index(int idx, char **buf, int *size)
 	WikiIndex *wiki_index;
 
 	if (idx >= m_match_title_total) {
-		*buf = m_buf;
-		*size = wiki_not_found(buf, size, NOT_FOUND);
-		return 0;
+		return wiki_not_found(buf, size, NOT_FOUND);
 	}
 
 	p = &m_match_title[idx];
+
+	if (idx == 0) {
+		m_curr_lang = &m_all_lang[0];
+		wiki_push_back(STATUS_MATCH_KEY, m_curr_match_key, 0, NULL);
+		return wiki_full_search(p->key, buf, size, 0);
+	}
+
 	wiki_index = p->which->index;
 	m_curr_lang = p->which;
 
@@ -726,10 +697,7 @@ int WikiManage::wiki_view_index(int idx, char **buf, int *size)
 		return n;
 	}
 	
-	*buf = m_buf;
-	*size = wiki_not_found(buf, size, "Data file error.");
-
-	return 0;
+	return wiki_not_found(buf, size, "Data file error.");
 }
 
 int WikiManage::wiki_add_key_pos(int pos, int height, int screen_height)
@@ -1025,6 +993,12 @@ int WikiManage::wiki_parse_url(const char *url, char *flag, char *title, char **
 			strcpy(m_buf, "Not Found.\n");
 			*data = m_buf;
 		}
+	} else if (strncmp(url, "idx:", 4) == 0) {
+		wiki_parse_url_full_search(url + 4, flag, title, data);
+	} else if (strncmp(url, "page:", 5) == 0) {
+		strcpy(flag, "1");
+		strcpy(title, m_search_buf.key);
+		wiki_full_search_one_page(data, &ret_size, atoi(url + 5));
 	}
 
 	return 0;
@@ -1286,6 +1260,10 @@ int WikiManage::wiki_curr(char **buf, int *size)
 	if (p == NULL)
 		return wiki_index_msg(buf, size);
 
+	if (p->flag == STATUS_FULL_TEXT) {
+		return wiki_full_search(p->key.title, buf, size, m_search_buf.curr_page);
+	}
+
 	if ((n = wiki_read_data(&p->idx, buf, NULL)) > 0) {
 		*size = n;
 		return n;
@@ -1304,6 +1282,9 @@ int WikiManage::wiki_back(char *status, char **buf, int *size)
 	if (p->flag == STATUS_CONTENT) {
 		strcpy(status, "1");
 		return wiki_curr(buf, size);
+	} else if (p->flag == STATUS_FULL_TEXT) {
+		strcpy(status, "1");
+		return wiki_full_search(p->key.title, buf, size, m_search_buf.curr_page);
 	}
 
 	strcpy(status, "2");
@@ -1322,6 +1303,9 @@ int WikiManage::wiki_forward(char *status, char **buf, int *size)
 	if (p->flag == STATUS_CONTENT) {
 		strcpy(status, "1");
 		return wiki_curr(buf, size);
+	} else if (p->flag == STATUS_FULL_TEXT) {
+		strcpy(status, "1");
+		return wiki_full_search(p->key.title, buf, size, m_search_buf.curr_page);
 	}
 
 	strcpy(status, "2");
@@ -1687,6 +1671,8 @@ struct one_lang *WikiManage::wiki_get_lang_addr(const char *lang)
 
 int WikiManage::wiki_scan_sdcard()
 {
+	memset(m_search_buf.key, 0, sizeof(m_search_buf.key));
+
 	m_wiki_config->wc_scan_all();
 	wiki_lang_init();
 
@@ -1694,4 +1680,203 @@ int WikiManage::wiki_scan_sdcard()
 		m_init_flag = 1;
 
 	return 0;
+}
+
+int WikiManage::wiki_full_search(const char *key, char **buf, int *size, int page)
+{
+	struct one_lang *which;
+
+	SET_CURR_TITLE(key);
+
+	if (wiki_check_full_search(key) == 0) 
+		wiki_full_search_update(key);
+
+	if (m_search_buf.page_total == 0)
+		return wiki_not_found(buf, size, "Not found");
+
+	if (page == 0) {
+		m_curr_lang = &m_all_lang[0];
+		wiki_push_back(STATUS_FULL_TEXT, key, 0, NULL);
+	}
+
+	return wiki_full_search_one_page(buf, size, page);
+}
+
+#define PAGE_TOTAL 10
+
+int WikiManage::wiki_full_search_one_page(char **buf, int *size, int page)
+{
+	full_search_t *fs  = &m_search_buf;
+
+	int last_page = fs->page_total / PAGE_TOTAL;
+
+	if (fs->page_total % PAGE_TOTAL)
+		last_page++;
+
+	if (page < 1)
+		page = 1;
+
+	if (page > last_page)
+		page = last_page;
+
+	fs->curr_page = page;
+
+	int len, pos = 0;
+	struct one_lang *p;
+	sort_idx_t idx;
+
+	pos = sprintf(m_curr_page + pos, "<table border=0>\n");
+
+	for (int i = PAGE_TOTAL * (page - 1); i < PAGE_TOTAL * page && i < fs->page_total; i++) {
+		if ((p = wiki_full_search_find_lang(i)) == NULL)
+			continue;
+
+		if (p->index->wi_find(NULL, WK_INDEX_FIND, fs->page_idx[i], &idx, &len) == -1)
+			continue;
+
+		char title[128];
+
+		p->index->wi_get_key(&idx, title);
+		pos += sprintf(m_curr_page + pos, "<tr><td width=100%%>"
+				"<a href='idx:%d'><font size=4>%s</font></a><br/>\n", i, title);
+
+		int show_flag = m_wiki_config->wc_get_full_text_show();
+
+		if (show_flag == FULL_TEXT_SHOW_SOME || show_flag == FULL_TEXT_SHOW_ALL) {
+			if ((len = p->data->wd_sys_read(idx.data_file_idx, idx.data_pos, idx.data_len,
+							m_curr_content, 2*1024*1024)) > 0) {
+				m_curr_content[len] = 0;
+
+				if (show_flag == FULL_TEXT_SHOW_SOME)
+					len = convert_page_complex(m_buf, m_curr_content, len, fs->key);
+				else
+					len = convert_page_simple(m_buf, m_curr_content, len, fs->key);
+				memcpy(m_curr_page + pos, m_buf, len);
+				pos += len;
+			}
+		}
+
+		pos += sprintf(m_curr_page + pos, "%s", "<hr>\n</td</tr>\n");
+	}
+
+	pos += sprintf(m_curr_page + pos, "</table>\n");
+
+	char next[1024] = "&nbsp;", before[1024] = "&nbsp;";
+
+	if (page < last_page)
+		sprintf(next, "<a href=\"page:%d\"><font size=4><b>&gt;&gt;&gt;&gt;&gt;</b></font></a>", page + 1);
+
+	if (page > 1)
+		sprintf(before, "<a href=\"page:%d\"><font size=4><b>&lt;&lt;&lt;&lt;&lt;</b></font></a>", page - 1);
+
+	pos += sprintf(m_curr_page + pos, "<table border=0 width=100%%><tr>"
+			"<td align=left width=40%%>%s</td>"
+			"<td align=center width=20%%>%d/%d</td>"
+			"<td align=right width=40%%>%s</td></tr></table>\n", before, page, last_page, next);
+
+	m_curr_page[pos] = 0;
+
+	return wiki_not_found(buf, size, m_curr_page);
+}
+
+struct one_lang *WikiManage::wiki_full_search_find_lang(int idx)
+{
+	full_search_t *fs = &m_search_buf;
+
+	for (int i = 0; i < fs->pos_total; i++) {
+		struct page_pos *p = &fs->page_pos[i];
+		if (idx >= p->start && idx <= p->end)
+			return p->which;
+	}
+
+	return NULL;
+}
+
+int WikiManage::wiki_check_full_search(const char *key)
+{
+	if (strcmp(m_search_buf.key, key) == 0)
+		return 1;
+
+	return 0;
+}
+
+int WikiManage::wiki_init_all_lang()
+{
+	struct one_lang *which;
+
+	for (int i = 0; i < m_select_lang_total; i++) {
+		if ((which = wiki_get_lang_addr(m_select_lang[i])) == NULL) {
+			wiki_init_one_lang(m_select_lang[i], 0);
+		}
+	}
+
+	return 0;
+}
+
+int WikiManage::wiki_full_search_update(const char *key)
+{
+	full_search_t *fs  = &m_search_buf;
+
+	strncpy(fs->key, key, sizeof(fs->key) - 1);
+	fs->page_total = 0;
+	fs->all_total = 0;
+	fs->pos_total = 0;
+
+	for_each_select_lang(p) {
+		int page_total = 0, all_total = 0;
+		page_total = p->full_index->wfi_find(key, &fs->page_idx[fs->page_total],
+				MAX_PAGE_IDX_TOTAL - fs->page_total, &all_total);
+
+		if (page_total == 0)
+			continue;
+
+		struct page_pos *pos = &fs->page_pos[fs->pos_total++];
+		pos->start = fs->page_total;
+		pos->end = fs->page_total + page_total - 1;
+		pos->which = p;
+
+		fs->page_total += page_total;
+		fs->all_total += all_total;
+
+		if (fs->page_total >= MAX_PAGE_IDX_TOTAL)
+			break;
+	}
+
+	return 0;
+}
+
+int WikiManage::wiki_parse_url_full_search(const char *url, char *flag, char *title, char **data)
+{
+	full_search_t *fs = &m_search_buf;
+	
+	int size, i = atoi(url);
+	struct one_lang *p = wiki_full_search_find_lang(i);
+
+	strcpy(flag, "1");
+	strcpy(title, fs->key);
+
+	if (p == NULL)
+		return wiki_not_found(data, &size, "Not Found.");
+
+	int len;
+	sort_idx_t idx;
+
+	if (p->index->wi_find(NULL, WK_INDEX_FIND, fs->page_idx[i], &idx, &len) == 0) {
+		if ((len = p->data->wd_sys_read(idx.data_file_idx, idx.data_pos, idx.data_len, m_curr_content, 2*1024*1024)) > 0) {
+			m_curr_content[len] = 0;
+
+			int size = convert_page_simple(m_curr_page, m_curr_content, len, fs->key);
+			m_curr_page[size] = 0;
+
+			char tmp[256];
+
+			p->index->wi_get_key(&idx, tmp);
+			m_curr_lang = p;
+			wiki_push_back(STATUS_CONTENT, tmp, len, &idx);
+
+			return wiki_not_found(data, &size, m_curr_page);
+		}
+	}
+
+	return wiki_not_found(data, &size, "Not Found.");
 }

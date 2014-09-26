@@ -202,6 +202,9 @@ int WikiConfig::wc_check_lang()
 
 int WikiConfig::wc_get_lang_list(char lang[MAX_SELECT_LANG_TOTAL][24], int *lang_total, struct file_st **ret, int *total)
 {
+	if (m_config == NULL)
+		return 0;
+
 	*lang_total = m_config->select_lang_total;
 
 	memcpy(lang, m_config->select_lang, sizeof(m_config->select_lang));
@@ -275,19 +278,19 @@ int WikiConfig::wc_add_color(const char *bg, const char *fg, const char *link,
 	return 0;
 }
 
+const char *m_color[16] = {
+	"#000000", /* black */
+	"#808080",
+	"#FFFFFF", /* white */
+	"#0000FF", /* blue */
+	"#A0A0A0",
+};
+
 int WikiConfig::wc_init_color()
 {
-	const char *color[16] = {
-		"#000000", /* black */
-		"#808080",
-		"#FFFFFF", /* white */
-		"#0000FF", /* blue */
-		"#A0A0A0",
-	};
-
 	if (m_config->color_total == 0) {
-		wc_add_color(color[2], color[0], color[3], color[2], color[0]);
-		wc_add_color(color[0], color[1], color[4], color[0], color[4]);
+		wc_add_color(m_color[2], m_color[0], m_color[3], m_color[2], m_color[0]);
+		wc_add_color(m_color[0], m_color[1], m_color[4], m_color[0], m_color[4]);
 	}
 
 	return 0;
@@ -295,7 +298,7 @@ int WikiConfig::wc_init_color()
 
 int WikiConfig::wc_get_color_mode()
 {
-	return m_config->color_index;
+	return m_config == NULL ? 0 : m_config->color_index;
 }
 
 int WikiConfig::wc_set_color_mode(int idx)
@@ -307,6 +310,15 @@ int WikiConfig::wc_set_color_mode(int idx)
 
 int WikiConfig::wc_get_config(char bg[16], char fg[16], char link[16], int *font_size)
 {
+	if (m_config == NULL) {
+		strcpy(bg, m_color[2]);
+		strcpy(fg, m_color[0]);
+		strcpy(link, m_color[3]);
+		*font_size = 13;
+
+		return 0;
+	}
+
 	color_t *p = &m_config->color[m_config->color_index];
 
 	strcpy(bg, p->bg);
@@ -320,6 +332,12 @@ int WikiConfig::wc_get_config(char bg[16], char fg[16], char link[16], int *font
 
 int WikiConfig::wc_get_list_color(char *list_bg, char *list_fg)
 {
+	if (m_config == NULL) {
+		strcpy(list_bg, m_color[2]);
+		strcpy(list_fg, m_color[0]);
+		return 0;
+	}
+
 	color_t *p = &m_config->color[m_config->color_index];
 
 	strcpy(list_bg, p->list_bg);
@@ -330,7 +348,7 @@ int WikiConfig::wc_get_list_color(char *list_bg, char *list_fg)
 
 int WikiConfig::wc_get_full_screen_flag()
 {
-	return m_config->full_screen_flag;
+	return m_config == NULL ? 0 : m_config->full_screen_flag;
 }
 
 int WikiConfig::wc_switch_full_screen()
@@ -368,7 +386,7 @@ int WikiConfig::wc_set_mutil_lang_list_mode(int mode)
 
 int WikiConfig::wc_get_home_page_flag()
 {
-	return m_config->home_page;
+	return m_config == NULL ? HOME_PAGE_BLANK : m_config->home_page;
 }
 
 int WikiConfig::wc_set_home_page_flag(int mode)
@@ -399,6 +417,9 @@ int WikiConfig::wc_set_translate_show_line(int x)
 
 int WikiConfig::wc_get_use_language()
 {
+	if (m_config == NULL)
+		return 0;
+
 	return strcmp(m_config->use_language, "zh") == 0 ? 1 : 0;
 }
 
@@ -452,7 +473,7 @@ int WikiConfig::wc_set_random_flag(int mode)
 
 int WikiConfig::wc_get_body_image_flag()
 {
-	return m_config->body_image_flag;
+	return m_config == NULL ? 0 : m_config->body_image_flag;
 }
 
 int WikiConfig::wc_set_body_image_flag(int flag)
@@ -475,3 +496,15 @@ int WikiConfig::wc_set_body_image_path(const char *path)
 	return 0;
 }
 
+
+int WikiConfig::wc_get_full_text_show()
+{
+	return m_config->full_text_show;
+}
+
+int WikiConfig::wc_set_full_text_show(int idx)
+{
+	m_config->full_text_show = idx;
+
+	return idx;
+}
