@@ -201,6 +201,7 @@ int SHash::sh_fd_init_ro(int _fd, unsigned int pos)
 #define sh_fd_get_pos(_n) ((_n - 1) * ((key_len + value_len) + sizeof(unsigned int)))
 
 #include "q_util.h"
+#include "q_log.h"
 
 int SHash::sh_fd_find(const void *key, void *value)
 {
@@ -227,7 +228,8 @@ int SHash::sh_fd_find(const void *key, void *value)
 		memset(buf, 0, key_len + value_len + sizeof(int));
 
 		offset = m_pos + rec_pos + rec_seek;
-		pread(fd, buf, key_len + value_len + sizeof(int), offset);
+		lseek(fd, offset, SEEK_SET);
+		read(fd, buf, key_len + value_len + sizeof(int));
 
 		if (sh_record_is_used(buf)) {
 			if (cmp_func(func_type, sh_get_key(buf), key, key_len) == 0) {
