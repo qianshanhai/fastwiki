@@ -4,6 +4,8 @@
 #ifndef __WIKI_ENV_COMMON_H
 #define __WIKI_ENV_COMMON_H
 
+#include "wiki_index.h"
+
 enum {
 	FM_FLAG_TEXT = 0x10,
 	FM_FLAG_BZIP2 = 0x20,
@@ -44,6 +46,11 @@ int init_texvc_file();
 
 compress_func_t get_compress_func(int *flag, const char *str);
 compress_func_t get_decompress_func(int z_flag);
+
+int convert_page_simple(char *tmp, char *buf, int len, const char *key);
+int convert_page_complex(char *tmp, char *buf, int len, const char *key);
+
+int wiki_convert_key(WikiIndex *index, const char *start, const char *key, int key_len, char *buf);
 
 #ifdef __cplusplus
 };
