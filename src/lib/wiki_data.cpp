@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
+#include "q_log.h"
+
 #include "wiki_index.h"
 #include "wiki_data.h"
 #include "gzip_compress.h"
@@ -50,8 +52,10 @@ int WikiData::wd_init(const fw_files_t file, int total)
 	}
 
 	for (i = 0; i < total; i++) {
-		if ((fd = open(file[i], O_RDONLY | O_BINARY)) == -1)
+		if ((fd = open(file[i], O_RDONLY | O_BINARY)) == -1) {
+			LOG("open file %s to read error: %s\n", file[i], strerror(errno));
 			break;
+		}
 
 		read(fd, &m_head, sizeof(m_head));
 		all_page_count += m_head.page_count;
