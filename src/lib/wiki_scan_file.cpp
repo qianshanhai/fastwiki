@@ -13,6 +13,8 @@
 #include "q_util.h"
 #include "wiki_scan_file.h"
 
+#include "q_log.h"
+
 WikiScanFile::WikiScanFile()
 {
 }
@@ -175,7 +177,8 @@ int WikiScanFile::wsf_check_dir(fw_dir_t *d, int total, const char *dir, const s
 {
 	for (int i = 0; i < total; i++) {
 		fw_dir_t *p = &d[i];
-		if (p->stat.st_dev == st->st_dev && p->stat.st_ino == st->st_ino)
+		if (memcmp(&p->stat.st_dev, &st->st_dev, sizeof(st->st_dev)) == 0
+				&& memcmp(&p->stat.st_ino, &st->st_ino, sizeof(st->st_ino)) == 0)
 			return 0;
 	}
 
