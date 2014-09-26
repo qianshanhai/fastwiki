@@ -10,6 +10,7 @@
 #include "wiki_index.h"
 #include "wiki_data.h"
 #include "wiki_full_index.h"
+#include "wiki_scan_file.h"
 
 static SHash *m_word_hash = NULL;
 
@@ -44,6 +45,16 @@ static const int max_page_size = 5*1024*1024;
 static int m_href_curr = -1;
 static int m_href_total;
 static pthread_mutex_t m_fidx_mutex;
+
+typedef struct {
+	char dir[128];
+	char word_file[128];
+	long long mem_size;
+	char tmp[128];
+	int pthread_total;
+} ffi_arg_t;
+
+ffi_arg_t m_ffi_arg;
 
 static int wiki_fetch_one_page(int *href_idx, char *buf, int buf_len, int *ret_len)
 {
@@ -114,7 +125,10 @@ int start_create_index(const char *index_file, fw_files_t data_file, int total,
 
 	m_full_index  = new WikiFullIndex();
 
-	int max_thread = wiki_pthread_total();
+	int max_thread = m_ffi_arg.pthread_total;
+	
+	if (max_thread == 0)
+		max_thread = wiki_pthread_total();
 
 	m_full_index->wfi_create_init(z_flag, page_total + 1, data_head.lang, tmp_dir, mem_size, m_word_hash, max_thread);
 
@@ -137,43 +151,108 @@ int start_create_index(const char *index_file, fw_files_t data_file, int total,
 	return 0;
 }
 
+int usage(const char *name)
+{
+	printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
+	printf("Author: Qianshanhai\n");
+	printf("usage: fastwiki-full-index <-d dir> [-w word] [-m mem size] [-t tmp] [-p pthread total]\n");
+	printf( "       -d  folder that include fastwiki data files.\n"
+			"       -w  mutil-byte language word list\n"
+			"       -m  memory size, default is 1024MB\n"
+			"       -t  temporary folder, default is 'tmp'\n"
+			"       -p  pthread total, default is host cpu total\n"
+			".\n"
+			);
+
+	exit(0);
+	return 0;
+}
+
+int ffi_init_option(int argc, char *argv[])
+{
+	int opt;
+	ffi_arg_t *p = &m_ffi_arg;
+
+	memset(p, 0, sizeof(ffi_arg_t));
+
+	while ((opt = getopt(argc, argv, "hd:w:m:t:p:")) != -1) {
+		switch (opt) {
+			case 'h':
+				usage(argv[0]);
+				break;
+			case 'd':
+				strncpy(p->dir, optarg, sizeof(p->dir) - 1);
+				break;
+			case 'w':
+				strncpy(p->word_file, optarg, sizeof(p->word_file) - 1);
+				break;
+			case 'm':
+				p->mem_size = atoll(optarg);
+				break;
+			case 't':
+				strncpy(p->tmp, optarg, sizeof(p->tmp) - 1);
+				break;
+			case 'p':
+				p->pthread_total = atoi(optarg);
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (p->tmp[0] == 0)
+		strcpy(p->tmp, "tmp");
+
+	if (q_mkdir(p->tmp, 0755) == -1) {
+		printf("error: mkdir %s: %s\n", p->tmp, strerror(errno));
+		exit(0);
+	}
+
+	if (p->mem_size == 0)
+		p->mem_size = 1024*1024*1024L;
+
+	if (p->dir[0] == 0)
+		usage(argv[0]);
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
-	char word_file[128], *z_flag = argv[1];
-	char index_file[128];
-	fw_files_t data_file;
+	fw_dir_t dir;
+	WikiScanFile *wsf;
+	struct file_st file[10];
+	ffi_arg_t *ff = &m_ffi_arg;
 
-	int data_file_total = 0;
+	ffi_init_option(argc, argv);
+	strcpy(dir.path, ff->dir);
 
-	if (argc < 5) {
-		printf("Version: %s %s, %s\n", _VERSION, __DATE__, __TIME__);
-		printf("Usage: %s <z_flag> <zh.txt> <index_file> <data_files>\n", argv[0]);
-		return 0;
+	wsf = new WikiScanFile();
+	int total = wsf->wsf_scan_file(file, sizeof(file) / sizeof(struct file_st), &dir, 1);
+
+	if (total > 1) {
+		printf("found many language data in this folder.\n");
+		exit(0);
 	}
 
-	strcpy(word_file, argv[2]);
-
-	memset(index_file, 0, sizeof(index_file));
-
-	for (int i = 3; i < argc; i++) {
-		if (strncmp(argv[i], "fastwiki.idx", 12) == 0)
-			strcpy(index_file, argv[i]);
-		else if (strncmp(argv[i], "fastwiki.dat", 12) == 0)
-			strcpy(data_file[data_file_total++], argv[i]);
+	if (total == 0) {
+		printf("Not found any fastwiki idx file and dat files in this folder\n");
+		printf("run 'fastwiki-full-index -h'  to see help\n");
+		exit(0);
 	}
-
-	if (data_file_total == 0 || index_file[0] == 0)
-		return 1;
 
 	m_word_hash = new SHash();
 	m_word_hash->sh_init(10*10000, sizeof(struct wfi_tmp_key), 0);
 
-	if (load_word(word_file) == -1) {
-		printf("load file %s error\n", word_file);
-		return 1;
+	if (ff->word_file[0]) {
+		if (load_word(ff->word_file) == -1) {
+			printf("load file %s error\n", ff->word_file);
+			return 1;
+		}
 	}
 
-	start_create_index(index_file, data_file, data_file_total, "tmp", 2*1024*1024*1024L, z_flag);
+	start_create_index(file[0].index_file, file[0].data_file,
+			file[0].data_total, ff->tmp, ff->mem_size, "gzip");
 
 	return 0;
 }
