@@ -84,8 +84,9 @@ int WikiScanFile::wsf_check_fw_name(const char *name, char *lang)
 {
 	split_t sp;
 
-	if (split('.', name, sp) < 3 || strcmp(sp[0], "fastwiki") != 0)
+	if (split('.', name, sp) < 3 || strcmp(sp[0], "fastwiki") != 0) {
 		return 0;
+	}
 
 	if (strcmp(sp[1], "idx") == 0 || strcmp(sp[1], "dat") == 0
 			|| strcmp(sp[1], "fidx") == 0 || strcmp(sp[1], "math") == 0
@@ -112,15 +113,15 @@ int WikiScanFile::wsf_scan_lang(const char *dir, const char *fname, struct file_
 		return -1;
 
 	if (my_strncmp(fname, WK_DAT_PREFIX) == 0) {
-		sprintf(p->data_file[p->data_total++], "%s/%s", dir, fname);
+		snprintf(p->data_file[p->data_total++], 128, "%s/%s", dir, fname);
 	} else if (my_strncmp(fname, WK_IDX_PREFIX) == 0) {
-		sprintf(p->index_file, "%s/%s", dir, fname);
+		snprintf(p->index_file, 128, "%s/%s", dir, fname);
 	} else if (my_strncmp(fname, WK_MATH_PREFIX) == 0) {
-		sprintf(p->math_file, "%s/%s", dir, fname);
+		snprintf(p->math_file, 128, "%s/%s", dir, fname);
 	} else if (my_strncmp(fname, WK_IMAGE_PREFIX) == 0) {
-		sprintf(p->image_file[p->image_total++], "%s/%s", dir, fname);
+		snprintf(p->image_file[p->image_total++], 128, "%s/%s", dir, fname);
 	} else if (my_strncmp(fname, WK_FIDX_PREFIX) == 0) {
-		sprintf(p->fidx_file[p->fidx_file_total++], "%s/%s", dir, fname);
+		snprintf(p->fidx_file[p->fidx_file_total++], 128, "%s/%s", dir, fname);
 	}
 
 	return 0;
@@ -159,7 +160,7 @@ int WikiScanFile::wsf_scan_sdcard(const char *dir)
 		if (d->d_name[0] == '.')
 			continue;
 
-		sprintf(file, "%s/%s", dir, d->d_name);
+		snprintf(file, sizeof(file), "%s/%s", dir, d->d_name);
 		if (dashd(file)) {
 			wsf_scan_sdcard(file);
 		} else if (dashf(file)) {
