@@ -80,6 +80,11 @@ struct local __local_en[] = {
 	{"FW_FB_SELECT_ONE", "Please select a image file"}, 
 	{"FW_FB_ENABLE_BODY_IMAGE", "Enable background image"}, 
 	{"FW_FB_SELECT_BODY_IMAGE", "Select background image"}, 
+	{"FULL_SEARCH_MSG", "Full Search"}, 
+	{"FULL_SEARCH_TEXT", "Full text Search "}, 
+	{"FULL_TEXT_SHOW_TITLE", "show title only"}, 
+	{"FULL_TEXT_SHOW_SOME", "show some content"}, 
+	{"FULL_TEXT_SHOW_ALL", "show all content"}, 
 	{NULL, NULL} 
 };
 
@@ -162,6 +167,11 @@ struct local __local_zh[] = {
 	{"FW_FB_SELECT_ONE", "请先选中一个图片文件"}, 
 	{"FW_FB_ENABLE_BODY_IMAGE", "启用背景图片"}, 
 	{"FW_FB_SELECT_BODY_IMAGE", "选择背景图片"}, 
+	{"FULL_SEARCH_MSG", "全文搜索"}, 
+	{"FULL_SEARCH_TEXT", "全文搜索设置"}, 
+	{"FULL_TEXT_SHOW_TITLE", "只显示标题"}, 
+	{"FULL_TEXT_SHOW_SOME", "显示部分信息"}, 
+	{"FULL_TEXT_SHOW_ALL", "显示全部"}, 
 	{NULL, NULL} 
 };
 
