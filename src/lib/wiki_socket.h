@@ -20,8 +20,6 @@ class WikiSocket {
 		void *m_do_url_class;
 		int ws_parse_url(char *buf, char *url, int u_len);
 
-		HttpParse *m_http;
-
 	public:
 		WikiSocket();
 		~WikiSocket();

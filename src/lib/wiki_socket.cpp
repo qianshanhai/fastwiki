@@ -30,8 +30,6 @@ WikiSocket::WikiSocket()
 
 	m_start_flag = 0;
 	m_pthread_total = 0;
-
-	m_http = NULL;
 }
 
 WikiSocket::~WikiSocket()
@@ -50,8 +48,6 @@ void WikiSocket::ws_init(ws_wait_func_t wait_func, ws_do_url_t do_url, void *do_
 	m_wait_func = wait_func;
 	m_do_url = do_url;
 	m_do_url_class = do_url_class;
-
-	m_http = new HttpParse();
 }
 
 struct my_thread_arg {
@@ -78,6 +74,8 @@ int WikiSocket::ws_one_thread(int idx)
 {
 	int sock;
 
+	HttpParse *http = new HttpParse();
+
 	for (;;) {
 		sock = q_accept(m_bind_sock);
 		if (sock == -1) {
@@ -87,8 +85,8 @@ int WikiSocket::ws_one_thread(int idx)
 			}
 			break;
 		}
-		m_http->hp_init(sock);
-		m_do_url(m_do_url_class, (void *)this, m_http, sock, idx);
+		http->hp_init(sock);
+		m_do_url(m_do_url_class, (void *)this, http, sock, idx);
 
 #ifdef WIN32
 		closesocket(sock);
@@ -96,6 +94,8 @@ int WikiSocket::ws_one_thread(int idx)
 		close(sock);
 #endif
 	}
+
+	delete http;
 
 	return 0;
 }
