@@ -23,6 +23,11 @@
  findex 1
  */
 
+
+/*
+ * [ head ][ idx ][ reverse idx ][ 16 ][ string ][ reverse string ] [ hash ]
+ */
+
 #define _WFI_CHECK_WORD_LEN 3 /* check a mutil-byte word len */
 
 #define _WFI_IDX_TITLE_LEN 64
@@ -46,8 +51,10 @@ struct fidx_key {
 };
 
 struct fidx_value {
-	unsigned long long pos;
+	unsigned int pos;
 	unsigned int len;
+	unsigned int word_pos;
+	unsigned char word_len;
 	unsigned char file_idx;
 	char r3[2];
 };
@@ -86,6 +93,12 @@ struct wfi_tmp_rec {
 	unsigned int page_idx[_MAX_TMP_PAGE_IDX_TOTAL];
 	int total;
 	unsigned int next;
+};
+
+struct wfi_curr_pos {
+	unsigned int curr_pos;
+	int fd;
+	int curr_fd_idx;
 };
 
 class WikiFullIndex {
@@ -154,6 +167,7 @@ class WikiFullIndex {
 		compress_func_t m_compress_func;
 
 		int m_z_flag;
+		struct wfi_curr_pos m_wfi_curr_pos;
 
 	public:
 		int wfi_create_init(const char *z_flag, int index_total, const char *lang,
@@ -161,6 +175,7 @@ class WikiFullIndex {
 				int pthread_total = 1);
 		int wfi_add_page(int page_idx, const char *page, int page_len, int pthread_idx = 0);
 		int wfi_add_page_done();
+		int wfi_flush_data_one_pthread();
 
 	private:
 		int wfi_add_one_word(const char *word, int page_idx);
@@ -171,7 +186,8 @@ class WikiFullIndex {
 		int wfi_tmp_get_max_k(struct wfi_tmp_max *m, int k);
 
 		int wfi_update_one_bitmap(unsigned int idx, unsigned char *bitmap);
-		int wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f);
+		int wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f,
+				void *tmp1, void *tmp2);
 		int wfi_flush_one_data(struct wfi_tmp_key *k, struct wfi_tmp_value *v);
 		int wfi_write_one_bitmap_to_file(const void *buf, int len, struct fidx_value *v);
 

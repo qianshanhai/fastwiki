@@ -120,7 +120,10 @@ int WikiFullIndex::wfi_find(const char *string, int *page_idx, int max_total, in
 	unsigned long long *bitmap = (unsigned long long *)m_bitmap;
 	unsigned long long *comp_buf = (unsigned long long *)m_comp_buf;
 
-	if (m_ro_init_flag == 0)
+	if (count_total)
+		*count_total = 0;
+
+	if (m_ro_init_flag == 0 || page_idx == NULL)
 		return 0;
 
 	split(' ', string, sp);
@@ -289,7 +292,7 @@ int WikiFullIndex::wfi_init_tmp_mem(size_t mem_size)
 		} \
 	} while (0)
 	
-#define _WFI_CHECK_WORD_1(p) (((unsigned char)(0[p])) & 0x80)
+#define _WFI_CHECK_WORD_1(p) ((((unsigned char)(0[p])) >> 5) & 0x7)
 #define _WFI_CHECK_WORD_2(p) (_WFI_CHECK_WORD_1(p) && _WFI_CHECK_WORD_1(p + _WFI_CHECK_WORD_LEN))
 #define _WFI_CHECK_WORD_3(p) (_WFI_CHECK_WORD_1(p) && _WFI_CHECK_WORD_2(p + _WFI_CHECK_WORD_LEN))
 #define _WFI_CHECK_WORD_4(p) (_WFI_CHECK_WORD_1(p) && _WFI_CHECK_WORD_3(p + _WFI_CHECK_WORD_LEN))
@@ -375,6 +378,19 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 			_WFI_ADD_PAGE_CHECK_POS();
 
 			i += _WFI_CHECK_WORD_LEN - 1;
+		} else if ((((unsigned char)p[i]) >> 6) & 0x3) {
+			if (i < page_len - 1) {
+				memset(&key, 0, sizeof(key));
+				strncpy(key.word, p + i, 2);
+				key_hash->sh_replace(&key, NULL);
+
+				if (key_pos >= _WFI_IDX_TITLE_LEN - 1) 
+					_WFI_ADD_PAGE_CHECK_POS();
+
+				curr_key[key_pos++] = p[i];
+				curr_key[key_pos++] = p[i + 1];
+				i++;
+			}
 		} else {
 			_WFI_ADD_PAGE_CHECK_POS();
 		}
@@ -627,20 +643,88 @@ int WikiFullIndex::wfi_write_one_bitmap_to_file(const void *buf, int len, struct
 	return 0;
 }
 
-#define _wfi_one_fidx_size(_fd_idx, _t) ((_fd_idx) == -1 \
+#define _wfi_one_fidx_size(_fd_idx, _t) ((_fd_idx) == 0 \
 		? (1600*1024*1024 - (_t) * (sizeof(struct fidx_key) + sizeof(struct fidx_value))) \
 	 	: (1800*1024*1024))
 
-int WikiFullIndex::wfi_flush_all_data()
+void *wfi_flush_data_pthread(void *arg)
 {
+	WikiFullIndex *wfi = (WikiFullIndex *)arg;
+
+	wfi->wfi_flush_data_one_pthread();
+
+	return NULL;
+}
+
+int WikiFullIndex::wfi_flush_data_one_pthread()
+{
+	int n;
 	struct wfi_tmp_key key;
 	struct wfi_tmp_value *v;
 	struct fidx_value *f, value;
 	void *tmp_find;
 
-	int fd = -1, curr_fd_idx = -1;
-	unsigned int curr_pos = sizeof(struct fidx_head);
+	unsigned char *bitmap = (unsigned char *)malloc(m_bitmap_size + 1);
+	unsigned char *tmp_buf = (unsigned char *)malloc(m_comp_buf_len);
 
+	void *tmp1 = malloc(m_comp_buf_len);
+	void *tmp2 = malloc(m_comp_buf_len);
+
+	int tmp_hash_total = m_tmp_hash->sh_hash_total();
+
+	struct wfi_curr_pos *p = &m_wfi_curr_pos;
+
+	for (;;) {
+		pthread_mutex_lock(&m_mutex);
+		n = m_tmp_hash->sh_read_next(&key, (void **)&v);
+		pthread_mutex_unlock(&m_mutex);
+
+		if (n != _SHASH_FOUND)
+			break;
+
+		memset(bitmap, 0, m_bitmap_size);
+
+		if (v->total > 0) {
+			wfi_update_one_bitmap(v->start_rec_idx, bitmap);
+		}
+
+		m_flush_hash->sh_begin(&tmp_find);
+		while (m_flush_hash->sh_next(&tmp_find, &key, (void **)&f) == _SHASH_FOUND) {
+			if (wfi_read_file_to_one_bitmap(bitmap, m_bitmap_size, f, tmp1, tmp2) == -1) {
+				LOG("wfi_read_file_to_one_bitmap error\n");
+				return -1;
+			}
+		}
+
+		memset(&value, 0, sizeof(value));
+		value.len = m_compress_func((char *)tmp_buf, m_comp_buf_len, (char *)bitmap, m_bitmap_size);
+
+		pthread_mutex_lock(&m_mutex);
+
+		if (p->curr_fd_idx == -1 || p->curr_pos > _wfi_one_fidx_size(p->curr_fd_idx, tmp_hash_total)) {
+			p->curr_fd_idx++;
+			if (p->fd >= 0)
+				close(p->fd);
+			p->fd = wfi_new_index_file(p->curr_fd_idx);
+			p->curr_pos = sizeof(struct fidx_head);
+		}
+
+		value.pos = p->curr_pos;
+		value.file_idx = p->curr_fd_idx;
+
+		write(p->fd, tmp_buf, value.len);
+		p->curr_pos += value.len;
+
+		m_hash->sh_add(&key, &value);
+
+		pthread_mutex_unlock(&m_mutex);
+	}
+
+	return 0;
+}
+
+int WikiFullIndex::wfi_flush_all_data()
+{
 	int tmp_hash_total = m_tmp_hash->sh_hash_total();
 
 	m_hash = new SHash();
@@ -648,60 +732,46 @@ int WikiFullIndex::wfi_flush_all_data()
 
 	m_tmp_hash->sh_reset();
 
-	while (m_tmp_hash->sh_read_next(&key, (void **)&v) == _SHASH_FOUND) {
-		if (curr_fd_idx == -1 || curr_pos > _wfi_one_fidx_size(curr_fd_idx, tmp_hash_total)) {
-			curr_fd_idx++;
-			if (fd >= 0)
-				close(fd);
-			fd = wfi_new_index_file(curr_fd_idx);
-			curr_pos = sizeof(struct fidx_head);
-		}
+	memset(&m_wfi_curr_pos, 0, sizeof(m_wfi_curr_pos));
+	m_wfi_curr_pos.curr_fd_idx = -1;
+	m_wfi_curr_pos.curr_pos = sizeof(struct fidx_head);
 
-		memset(m_bitmap, 0, m_bitmap_size);
+	pthread_t id[128];
 
-		if (v->total > 0) {
-			wfi_update_one_bitmap(v->start_rec_idx, m_bitmap);
-		}
-
-		m_flush_hash->sh_begin(&tmp_find);
-		while (m_flush_hash->sh_next(&tmp_find, &key, (void **)&f) == _SHASH_FOUND) {
-			if (wfi_read_file_to_one_bitmap(m_bitmap, m_bitmap_size, f) == -1) {
-				LOG("wfi_read_file_to_one_bitmap error\n");
-				return -1;
-			}
-		}
-
-		memset(&value, 0, sizeof(value));
-
-		value.pos = curr_pos;
-		value.file_idx = curr_fd_idx;
-
-		value.len = m_compress_func((char *)m_tmp_buf, m_comp_buf_len, (char *)m_bitmap, m_bitmap_size);
-		write(fd, m_tmp_buf, value.len);
-		curr_pos += value.len;
-
-		m_hash->sh_add(&key, &value);
+	for (int i = 0; i < m_pthread_total; i++) {
+		int n = pthread_create(&id[i], NULL, wfi_flush_data_pthread, (void *)this);
+		if (n != 0)
+			return -1;
+		q_sleep(1);
 	}
 
-	close(fd);
+	for (int i = 0; i < m_pthread_total; i++) {
+		pthread_join(id[i], NULL);
+	}
 
 	return 0;
 }
 
-int WikiFullIndex::wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f)
+int WikiFullIndex::wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f,
+		void *tmp1, void *tmp2)
 {
 	int n;
 	unsigned long long *bitmap = (unsigned long long *)buf;
-	unsigned long long *tmp = (unsigned long long *)m_comp_buf;
+	unsigned long long *tmp = (unsigned long long *)tmp1;
+
+	pthread_mutex_lock(&m_mutex);
 
 	lseek(m_flush_fd[f->file_idx], f->pos, SEEK_SET);
+	n = read(m_flush_fd[f->file_idx], tmp1, f->len);
 
-	if ((n = read(m_flush_fd[f->file_idx], m_tmp_buf, f->len)) != (int)f->len) {
+	pthread_mutex_unlock(&m_mutex);
+
+	if (n != (int)f->len) {
 		LOG("read tmp file data error: len=%d, but just read: %d\n", f->len, n);
 		return -1;
 	}
 
-	if ((n = m_decompress_func((char *)m_comp_buf, m_comp_buf_len, (char *)m_tmp_buf, f->len)) == -1) {
+	if ((n = m_decompress_func((char *)tmp2, m_comp_buf_len, (char *)tmp1, f->len)) == -1) {
 		LOG("decompress error: len=%d\n", f->len);
 		return -1;
 	}
