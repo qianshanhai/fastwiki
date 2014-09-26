@@ -16,6 +16,10 @@ inline int log_sys_format(char *buf, int size, const char *fmt, ...)
 	return len;
 }
 
+#ifdef FW_NJI
+extern "C" int LOG(const char *fmt, ...);
+#else
+
 #define LOG(...) \
 	do { \
 		int __len; \
@@ -25,5 +29,7 @@ inline int log_sys_format(char *buf, int size, const char *fmt, ...)
 		printf("%s: %d: %s", __FILE__, __LINE__, __buf); \
 		fflush(stdout); \
 	} while (0)
+
+#endif
 
 #endif

@@ -15,7 +15,7 @@ struct http_param {
 class HttpParse {
 	private:
 		char m_host[32];
-		char m_url[64];
+		char m_url[256];
 		char m_zero[4];
 
 		struct http_param m_cookie[_MAX_HTTP_COOKIE_TOTAL];
@@ -39,13 +39,13 @@ class HttpParse {
 		const char *hp_url();
 
 		void hp_stat();
+		char *hp_www_decode(const char *buf, char *tmp, int len);
 
 	private:
 		int hp_init_host(char *p);
 		int hp_init_cookie(char *p);
 		int hp_init_param(char *p);
 
-		char *hp_www_decode(const char *buf, char *tmp, int len);
 		char *hp_fetch(struct http_param *buf, int total, const char *name);
 
 		void hp_print_param(struct http_param *buf, int total);
