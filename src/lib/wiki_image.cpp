@@ -184,7 +184,7 @@ int WikiImage::we_read_next(int pthread_idx, char *data, int *len)
 int WikiImage::we_init(const char *lang, const char *date)
 {
 	m_hash = new SHash();
-	m_hash->sh_set_hash_magic(get_max_prime(30*10000));
+	m_hash->sh_set_hash_magic(get_max_prime(50*10000));
 	m_hash->sh_init(20*10000, sizeof(struct wiki_image_key), sizeof(struct wiki_image_value));
 
 	m_curr_fd = -1;
@@ -199,14 +199,14 @@ int WikiImage::we_init(const char *lang, const char *date)
 	return 0;
 }
 
-#define _MAX_IMAGE_FILE_SIZE (1900*1024*1024)
+#define _MAX_IMAGE_FILE_SIZE (1800*1024*1024)
 
 int WikiImage::we_add_one_image(const char *fname, const char *data, int len)
 {
 	int max_size = _MAX_IMAGE_FILE_SIZE;
 
 	if (m_curr_file_idx == 0)
-		max_size -= 200*1024*1024;
+		max_size -= 400*1024*1024;
 
 	if (m_curr_size > max_size) {
 		we_add_done();
