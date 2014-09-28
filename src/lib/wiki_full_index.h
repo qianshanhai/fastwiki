@@ -12,35 +12,35 @@
 
 /*
  * full index have many index, name as fastwiki.fidx.zh.0
- * the first fidx file have SHash on the file start:
-   [ SHash ][ ... ]
- 
-   SHash key  :
-   char word[64];
-   SHash value:  
- 
- findex 0
- findex 1
- */
-
-
-/*
- * [ head ][ idx ][ reverse idx ][ 16 ][ string ][ reverse string ] [ hash ]
+ * first fidx file format:
+ *
+ * [ head ][ page_idx ][ hash ][ value ][ string ][ reverse idx ][ data ]
+ *
+ * the other fidx file format:
+ * [ head ][ data ]
+ *
  */
 
 #define _WFI_CHECK_WORD_LEN 3 /* check a mutil-byte word len */
-
-#define _WFI_IDX_TITLE_LEN 64
+#define _WFI_IDX_TITLE_LEN 24
 
 struct fidx_head {
+	char name[32];  /* ".fastwiki.full.text.search" */
+	int version;
 	int z_flag;  /* compress flag */
-	int hash_pos;
-	int hash_size;
+	char random[32]; /* same as fastwiki.dat and fastwiki.idx */
+	char lang[32];   /* same as fastwiki.dat and fastwiki.idx */
 	int file_idx;
 	int bitmap_size;
-	int index_flag; /* =1 page index equal inline index */
-	char random[32];
-	char lang[32];
+	int page_index_flag; /* =1 page index equal inline index */
+	int page_index_total;
+	int value_total;
+	unsigned int hash_pos;
+	unsigned int hash_size;
+	unsigned int value_pos; /* value_size = value_total * sizeof(idx_value_t) */
+	unsigned int string_pos;
+	unsigned int string_len;
+	unsigned int reverse_index_pos;
 	char reserve[256];
 	unsigned int head_crc32; /* Not used now */
 	unsigned int crc32;      /* Not used now */
@@ -53,11 +53,18 @@ struct fidx_key {
 struct fidx_value {
 	unsigned int pos;
 	unsigned int len;
-	unsigned int word_pos;
-	unsigned char word_len;
 	unsigned char file_idx;
 	char r3[2];
 };
+
+typedef struct {
+	unsigned int pos;
+	unsigned int len;
+	unsigned char file_idx;
+	char r[2];
+	unsigned char word_len;
+	unsigned int word_pos;
+} idx_value_t;
 
 struct wfi_tmp_key {
 	char word[_WFI_IDX_TITLE_LEN];
@@ -101,6 +108,19 @@ struct wfi_curr_pos {
 	int curr_fd_idx;
 };
 
+struct tmp_key_val {
+	struct wfi_tmp_key key;
+	struct wfi_tmp_value val;
+};
+
+struct word_key {
+	char word[_WFI_IDX_TITLE_LEN];
+};
+
+struct word_value {
+	int pos;
+};
+
 class WikiFullIndex {
 	public:
 		WikiFullIndex();
@@ -121,6 +141,8 @@ class WikiFullIndex {
 
 	private:
 		int wfi_convert_index(int idx);
+		int wfi_reverse_idx(int idx);
+		int wfi_get_value(int idx, idx_value_t *v);
 
 	public:
 		int wfi_init(const fw_files_t file, int total);
@@ -169,6 +191,13 @@ class WikiFullIndex {
 		int m_z_flag;
 		struct wfi_curr_pos m_wfi_curr_pos;
 
+		int m_word_total;
+		int m_word_str_len;
+		int *m_reverse_index;
+		idx_value_t *m_value;
+		int m_tmp_fd;
+		char *m_string;
+
 	public:
 		int wfi_create_init(const char *z_flag, int index_total, const char *lang,
 				const char *tmp_dir, size_t mem_size, SHash *word_hash,
@@ -200,6 +229,12 @@ class WikiFullIndex {
 		int wfi_flush_full_index();
 		int wfi_rewrite_file_head(const struct fidx_head *h);
 		int wfi_check_inline_index();
+
+		int wfi_set_head(struct fidx_head *h);
+		int wfi_recount_value_file_idx();
+		int wfi_create_idx_value(int word_len);
+		int wfi_sort_tmp_record();
+		int wfi_write_tmp_hash(int *word_len);
 };
 
 #endif
