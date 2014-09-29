@@ -47,7 +47,7 @@ int WikiImage::we_init(const fw_files_t file, int total)
 		return -1;
 
 	for (int i = 0; i < total; i++) {
-		if ((fd = open(file[i], O_RDONLY | O_BINARY | O_LARGEFILE)) == -1) {
+		if ((fd = open(file[i], O_RDONLY | O_BINARY)) == -1) {
 			perror(file[i]);
 			return -1;
 		}
