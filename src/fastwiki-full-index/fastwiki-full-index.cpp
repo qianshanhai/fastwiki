@@ -5,7 +5,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "q_log.h"
 #include "q_util.h"
+#include "prime.h"
+#include "gzip_compress.h"
 
 #include "wiki_index.h"
 #include "wiki_data.h"
@@ -90,9 +93,13 @@ static void *wiki_full_index_thread(void *arg)
 	int idx, n;
 	char *buf = (char *)malloc(max_page_size);
 	int pthread_idx = *(int *)arg;
+	char *tmp = (char *)malloc(max_page_size);
 
-	while (wiki_fetch_one_page(&idx, buf, max_page_size, &n)) {
-		m_full_index->wfi_add_page(idx, buf, n, pthread_idx);
+	while (wiki_fetch_one_page(&idx, buf, 0, &n)) {
+		if ((n = gunzip(tmp, max_page_size, buf, n)) > 0) {
+			tmp[n] = 0;
+			m_full_index->wfi_add_page(idx, tmp, n, pthread_idx);
+		}
 	}
 
 	return NULL;
@@ -122,12 +129,18 @@ int start_create_index(const char *index_file, fw_files_t data_file, int total,
 			page_total++;
 		}
 	}
+#ifdef DEBUG
+	LOG("page total: %d\n", page_total);
+#endif
 
 	m_full_index  = new WikiFullIndex();
 
 	int max_thread = m_ffi_arg.pthread_total;
 	
 	if (max_thread == 0)
+		max_thread = 1;
+	
+	if (max_thread > wiki_pthread_total())
 		max_thread = wiki_pthread_total();
 
 	m_full_index->wfi_create_init(z_flag, page_total + 1, data_head.lang, tmp_dir, mem_size, m_word_hash, max_thread);
@@ -156,9 +169,9 @@ int usage(const char *name)
 	printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
 	printf("Author: Qianshanhai\n");
 	printf("usage: fastwiki-full-index <-d dir> [-w word] [-m mem size] [-t tmp] [-p pthread total]\n");
-	printf( "       -d  folder that include fastwiki data files.\n"
+	printf( "       -d  the folder that include fastwiki data files.\n"
 			"       -w  mutil-byte language word list\n"
-			"       -m  memory size, default is 1024MB\n"
+			"       -m  memory size, unit is MB. Default is 1024MB\n"
 			"       -t  temporary folder, default is 'tmp'\n"
 			"       -p  pthread total, default is host cpu total\n"
 			".\n"
@@ -242,6 +255,7 @@ int main(int argc, char *argv[])
 	}
 
 	m_word_hash = new SHash();
+	m_word_hash->sh_set_hash_magic(get_best_hash(50*10000));
 	m_word_hash->sh_init(10*10000, sizeof(struct wfi_tmp_key), 0);
 
 	if (ff->word_file[0]) {
