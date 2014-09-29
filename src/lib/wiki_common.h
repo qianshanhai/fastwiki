@@ -23,6 +23,7 @@ typedef int (*compress_func_t)(char *out, int out_len, const char *in, int in_le
 extern "C" {
 #endif
 
+int wiki_debug_total();
 int wiki_pthread_total();
 
 int wiki_is_dont_ask();

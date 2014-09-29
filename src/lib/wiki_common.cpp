@@ -21,6 +21,16 @@ int wiki_pthread_total()
 	return atoi(p);
 }
 
+int wiki_debug_total()
+{
+	char *p = getenv("DEBUG_TOTAL");
+
+	if (p == NULL || atoi(p) <= 0)
+		return 0;
+
+	return atoi(p);
+}
+
 int wiki_is_dont_ask()
 {
 	char *env = getenv("DONT_ASK");
