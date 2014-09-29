@@ -145,7 +145,7 @@ int init_var()
 	return 0;
 }
 
-#define MAX_TMP_SIZE (3*1024*1024)
+#define MAX_TMP_SIZE (5*1024*1024)
 
 static void *wiki_read_thread(void *arg)
 {
@@ -206,24 +206,9 @@ int use_of_time()
 
 	s = s - h * 3600 - m * 60;
 
-	print("use of time(转换时间): %02d:%02d:%02d\r\n", h, m, s);
+	print("use of time: %02d:%02d:%02d\r\n", h, m, s);
 
 	return 0;
-}
-
-void fw_quit()
-{
-	if (wiki_is_dont_ask()) {
-		exit(0);
-	}
-
-	print("Press Ctrl-C to exit(按 Ctrl-C 退出) ...\r\n");
-
-	while (1) {
-		q_sleep(3600);
-	}
-	print("\r\n");
-	exit(0);
 }
 
 int start_convert()
@@ -345,8 +330,6 @@ int main(int argc, char *argv[])
 
 	time(&m_curr);
 	start_convert();
-
-	fw_quit();
 
 	return 0;
 }
