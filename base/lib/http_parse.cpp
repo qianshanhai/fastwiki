@@ -32,6 +32,10 @@ int HttpParse::hp_init(int sock)
 	return hp_init_all(buf, len);
 }
 
+#ifdef WIN32
+#define strcasestr strstr
+#endif
+
 int HttpParse::hp_init_all(char *buf, int len)
 {
 	int content_len = 0;
@@ -130,6 +134,9 @@ int HttpParse::hp_init_cookie(char *p)
 		
 		strncpy(k->name, trim(buf), sizeof(k->name) - 1);
 		strncpy(k->value, trim(w), sizeof(k->value) - 1);
+
+		if (m_cookie_total >= _MAX_HTTP_COOKIE_TOTAL)
+			break;
 	}
 
 	return m_cookie_total;
@@ -181,6 +188,8 @@ int HttpParse::hp_init_param(char *p)
 
 			strncpy(k->name, hp_www_decode(buf, tmp, sizeof(tmp)), sizeof(k->name) - 1);
 			strncpy(k->value, hp_www_decode(w, tmp, sizeof(tmp)), sizeof(k->value) - 1);
+			if (m_param_total >= _MAX_HTTP_PARAM_TOTAL)
+				break;
 		}
 	}
 
