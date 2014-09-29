@@ -142,6 +142,11 @@ int WikiData::wd_sys_read(int file_idx, unsigned int pos, int len, char *ret, in
 			return -1;
 	}
 
+	if (ret_max == 0) {
+		memcpy(ret, m_tmp, z_len);
+		return z_len;
+	}
+
 	int n;
 
 	if (m_z_flag == FM_FLAG_LZ4) {
