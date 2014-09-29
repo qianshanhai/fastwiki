@@ -23,7 +23,6 @@ int load_word(const char *file)
 		chomp(buf);
 		memset(&key, 0, sizeof(key));
 
-		//printf("%s\n", buf);
 		strncpy(key.word, buf, sizeof(key.word) - 1);
 		m_word_hash->sh_replace(&key, NULL);
 	}
