@@ -88,8 +88,6 @@ txt:
 	return 0;
 }
 
-static int m_total = 0;
-
 int FileIO::fi_gets(char *buf, int max_size)
 {
 	int read_size = 0;
@@ -118,13 +116,6 @@ repeat:
 
 int FileIO::fi_read(void *buf, int size)
 {
-#if 0
-	int n;
-
-	while (m_total++ < 723) {
-		n = (this->*FileIO::m_read)(buf, size);
-	}
-#endif
 	return  (this->*FileIO::m_read)(buf, size);
 }
 
