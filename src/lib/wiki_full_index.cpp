@@ -86,8 +86,6 @@ inline int WikiFullIndex::wfi_get_value(int idx, idx_value_t *v)
 {
 	memset(v, 0, sizeof(*v));
 
-	LOG("value_pos: %d\n", m_head.value_pos);
-
 	lseek(m_fd[0], m_head.value_pos + idx * sizeof(idx_value_t), SEEK_SET);
 	read(m_fd[0], v, sizeof(*v));
 
@@ -150,6 +148,8 @@ int WikiFullIndex::wfi_init_is_done()
  * 5. "a$"  : use '$' to match those words that end with a.
  * 6. "a*b" : match the words that start 'a', and include 'b' after 'a'
  * 7. "a*b*c$" :  
+ * 8. "!a"  : match not include "a"
+ * 9. "a !b": match include "a" but not include "b" 
  */
 int WikiFullIndex::wfi_find(const char *string, int *page_idx, int max_total, int *count_total)
 {
@@ -181,7 +181,6 @@ int WikiFullIndex::wfi_find(const char *string, int *page_idx, int max_total, in
 			return 0;
 
 		idx_value_t v;
-
 		wfi_get_value(value.pos, &v);
 
 		lseek(m_fd[v.file_idx], v.pos, SEEK_SET);
@@ -327,7 +326,7 @@ int WikiFullIndex::wfi_init_tmp_mem(size_t mem_size)
 
 	for (int i = 0; i < m_pthread_total; i++) {
 		m_key_hash[i] = new SHash();
-		m_key_hash[i]->sh_init(30*10000, sizeof(struct wfi_tmp_key), 0);
+		m_key_hash[i]->sh_init(10*10000, sizeof(struct wfi_tmp_key), 0);
 	}
 
 	return 0;
@@ -383,6 +382,7 @@ int WikiFullIndex::wfi_init_tmp_mem(size_t mem_size)
 
 #ifdef DEBUG
 static int m_page_total = 0;
+static int m_debug_total = wiki_debug_total();
 #endif
 
 int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, int pthread_idx)
@@ -402,11 +402,16 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 		if (p[i] == '<') {
 			for (; p[i] != '>' && i < page_len; i++);
 		}
-
 		if (_WFI_VALID_KEY_CHAR(p[i]) || _WFI_VALID_TWO_BYTE(p[i])) {
-			for (pos = 0; pos < (int)sizeof(curr_key) - 1
-					&& (_WFI_VALID_KEY_CHAR(p[i]) || _WFI_VALID_TWO_BYTE(p[i])); i++) {
-				curr_key[pos++] = p[i];
+			for (pos = 0; pos < (int)sizeof(curr_key) - 1; i++) {
+				if (_WFI_VALID_KEY_CHAR(p[i])) {
+					curr_key[pos++] = p[i];
+				} else if (_WFI_VALID_TWO_BYTE(p[i])) {
+					curr_key[pos++] = p[i++];
+					curr_key[pos++] = p[i];
+				} else {
+					break;
+				}
 			}
 			if (pos <= _WFI_IDX_TITLE_LEN - 1)
 				_WFI_ADD_ONE_WORD(curr_key, pos);
@@ -422,7 +427,7 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 				_WFI_ADD_ONE_WORD(curr_key, pos);
 			else
 				_WFI_ADD_MANY_WORD(curr_key, pos, 4);
-		}
+		} 
 
 		if (_WFI_CHECK_WORD_1(p + i)) {
 			_WFI_CHECK_ALL_WORD(p + i, 10);
@@ -436,7 +441,6 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 			_WFI_CHECK_ALL_WORD(p + i, 2);
 
 			_WFI_ADD_ONE_WORD(p + i, _WFI_CHECK_WORD_LEN);
-
 			i += _WFI_CHECK_WORD_LEN - 1;
 		}
 	}
@@ -454,6 +458,18 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 	m_page_total++;
 	if (m_page_total % 1000 == 0) {
 		LOG("hash total:%d\n", m_tmp_hash->sh_hash_total());
+	}
+	if (m_debug_total > 0 && m_page_total >= m_debug_total) {
+		struct wfi_tmp_key key;
+		struct wfi_tmp_value value;
+
+		FILE *fp = fopen("word.txt.1", "w+");
+		m_tmp_hash->sh_reset();
+		while (m_tmp_hash->sh_read_next(&key, (void *)&value) == _SHASH_FOUND) {
+			fprintf(fp, "%s\n", key.word);
+		}
+		fclose(fp);
+		exit(0);
 	}
 #endif
 
@@ -699,6 +715,7 @@ void *wfi_flush_data_pthread(void *arg)
 
 int WikiFullIndex::wfi_flush_data_one_pthread()
 {
+	int n;
 	struct fidx_value *f;
 	void *tmp_find;
 	struct tmp_key_val rec;
@@ -713,9 +730,11 @@ int WikiFullIndex::wfi_flush_data_one_pthread()
 
 	for (;;) {
 		pthread_mutex_lock(&m_mutex);
-		if (read(m_tmp_fd, &rec, sizeof(rec)) != sizeof(rec))
-			break;
+		n = read(m_tmp_fd, &rec, sizeof(rec));
 		pthread_mutex_unlock(&m_mutex);
+
+		if (n != sizeof(rec))
+			break;
 
 		memset(bitmap, 0, m_bitmap_size);
 
