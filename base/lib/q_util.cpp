@@ -22,7 +22,11 @@ int dashl(const char *fname)
 {
 	struct stat st;
 
+#ifdef WIN32
+	return 0;
+#else
 	return (lstat(fname, &st) == 0 && S_ISLNK(st.st_mode));
+#endif
 }
 
 off_t file_size(const char *fname)
