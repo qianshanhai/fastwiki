@@ -440,6 +440,20 @@ int WikiIndex::wi_write_index_file(const char *outfile, const wi_head_t *h, cons
 	return 0;
 }
 
+#define _WI_VALID_THREE_BYTE(x) ((((unsigned char)(x)) >> 5) == 0x7)
+#define _WI_VALID_TWO_BYTE(x) ((((unsigned char)(x)) >> 6) == 0x3)
+
+#define _wi_add_key() \
+	do { \
+		if (pos > 0) { \
+			if (*len >= KEY_SPLIT_LEN - 1) \
+			return 0; \
+			strncpy(ret[*len], tmp, pos); \
+			(*len)++; \
+			pos = 0; \
+		} \
+	} while (0)
+
 /*
  * note: sizeof(ret) == 4 !!
  */
@@ -451,44 +465,28 @@ int WikiIndex::wi_split_key(const char *key, int k_len, char ret[KEY_SPLIT_LEN][
 	*len = 0;
 
 	for (int i = 0; i < k_len; i++) {
-		if (key[i] & 0x80) {
-			if (pos > 0) {
-				if (*len >= KEY_SPLIT_LEN - 1)
-					return 0;
-				strncpy(ret[*len], tmp, pos);
-				(*len)++;
-				pos = 0;
-			}
+		if (_WI_VALID_THREE_BYTE(key[i])) {
 			if (*len >= KEY_SPLIT_LEN - 1)
 				return 0;
+			_wi_add_key();
 			strncpy(ret[*len], key + i, 3);
 			(*len)++;
 			i += 2;
-		} else if (key[i] == ' ' || key[i] == '.'
-				|| key[i] == ',' || key[i] == '('
-				|| key[i] == ')' || key[i] == '&'
-				|| key[i] == '<' || key[i] == '>'
-				|| key[i] == '-' || key[i] == '+') {
-			if (pos > 0) {
-				if (*len >= KEY_SPLIT_LEN - 1)
-					return 0;
-				strncpy(ret[*len], tmp, pos);
-				(*len)++;
-				pos = 0;
-			}
+		} else if (key[i] == ' ' || key[i] == '.' || key[i] == ',' || key[i] == '('
+				|| key[i] == ')' || key[i] == '&' || key[i] == '<' || key[i] == '>'
+				|| key[i] == '-' || key[i] == '+' || key[i] == '_') {
+			_wi_add_key();
 		} else {
 			if (pos >= (int)sizeof(tmp) - 1)
 				break;
+			if (i < k_len - 1 && _WI_VALID_TWO_BYTE(key[i])) {
+				tmp[pos++] = key[i++];
+			}
 			tmp[pos++] = key[i];
 		}
 	}
 
-	if (pos > 0) {
-		if (*len >= KEY_SPLIT_LEN - 1)
-			return 0;
-		strncpy(ret[*len], tmp, pos);
-		(*len)++;
-	}
+	_wi_add_key();
 
 	return 0;
 }
