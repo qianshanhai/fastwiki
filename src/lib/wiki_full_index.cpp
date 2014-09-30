@@ -811,6 +811,8 @@ int _cmp_reverse_index(const void *a, const void *b)
 	return xa->word_len - xb->word_len;
 }
 
+#define _WFI_TMP_HASH_FNAME ".wfi.tmp_hash"
+
 int WikiFullIndex::wfi_write_tmp_hash(int *word_len)
 {
 	struct tmp_key_val rec;
@@ -818,7 +820,7 @@ int WikiFullIndex::wfi_write_tmp_hash(int *word_len)
 	*word_len = 0;
 	m_word_total = m_tmp_hash->sh_hash_total();
 
-	if ((m_tmp_fd = open(".tmp_hash", O_RDWR | O_CREAT | O_BINARY | O_TRUNC, 0644)) == -1)
+	if ((m_tmp_fd = open(_WFI_TMP_HASH_FNAME, O_RDWR | O_CREAT | O_BINARY | O_TRUNC, 0644)) == -1)
 		return -1;
 
 	m_tmp_hash->sh_reset();
@@ -927,6 +929,12 @@ int WikiFullIndex::wfi_flush_all_data()
 	for (int i = 0; i < m_pthread_total; i++) {
 		pthread_join(id[i], NULL);
 	}
+
+	close(m_tmp_fd);
+
+#ifndef DEBUG
+	unlink(_WFI_TMP_HASH_FNAME);
+#endif
 
 	return 0;
 }
@@ -1124,7 +1132,9 @@ int WikiFullIndex::wfi_rewrite_file_head(const struct fidx_head *h)
 	for (int i = 0; i <= m_curr_flush_fd_idx; i++) {
 		_wfi_set_fidx_tmp_fname(file, i);
 		close(m_flush_fd[i]);
-		//unlink(file);
+#ifndef DEBUG
+		unlink(file);
+#endif
 	}
 	
 	return 0;
