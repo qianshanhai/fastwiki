@@ -54,14 +54,16 @@ struct fidx_value {
 	unsigned int pos;
 	unsigned int len;
 	unsigned char file_idx;
-	char r3[2];
+	unsigned char text_flag;
+	char r[2];
 };
 
 typedef struct {
 	unsigned int pos;
 	unsigned int len;
 	unsigned char file_idx;
-	char r[2];
+	unsigned char text_flag;
+	char r[1];
 	unsigned char word_len;
 	unsigned int word_pos;
 } idx_value_t;
@@ -118,7 +120,7 @@ struct word_key {
 };
 
 struct word_value {
-	int pos;
+	int pos; /* point to idx_value_t: m_value[pos] */
 };
 
 class WikiFullIndex {
@@ -155,6 +157,7 @@ class WikiFullIndex {
 
 		int wfi_unload_all_word(const char *file);
 		int wfi_stat();
+		int wfi_count(const char *file);
 
 	/* use for rw */
 	private:
@@ -198,6 +201,9 @@ class WikiFullIndex {
 		int m_tmp_fd;
 		char *m_string;
 
+		int m_min_compress_total;
+		int *m_min_page_idx;
+
 	public:
 		int wfi_create_init(const char *z_flag, int index_total, const char *lang,
 				const char *tmp_dir, size_t mem_size, SHash *word_hash,
@@ -214,11 +220,11 @@ class WikiFullIndex {
 		int wfi_delete_tmp_rec(unsigned int start_idx);
 		int wfi_tmp_get_max_k(struct wfi_tmp_max *m, int k);
 
-		int wfi_update_one_bitmap(unsigned int idx, unsigned char *bitmap);
+		int wfi_update_one_bitmap(unsigned int idx, unsigned char *bitmap, int *min_page);
 		int wfi_read_file_to_one_bitmap(unsigned char *buf, int size, struct fidx_value *f,
-				void *tmp1, void *tmp2);
+				int *min_page, void *tmp1, void *tmp2);
 		int wfi_flush_one_data(struct wfi_tmp_key *k, struct wfi_tmp_value *v);
-		int wfi_write_one_bitmap_to_file(const void *buf, int len, struct fidx_value *v);
+		int wfi_write_one_bitmap_to_file(const void *buf, int len, struct fidx_value *v, int flag);
 
 		int wfi_flush_some_data();
 		int wfi_flush_all_data();
@@ -235,6 +241,7 @@ class WikiFullIndex {
 		int wfi_create_idx_value(int word_len);
 		int wfi_sort_tmp_record();
 		int wfi_write_tmp_hash(int *word_len);
+		int wfi_count_min_compress_size();
 };
 
 #endif
