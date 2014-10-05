@@ -94,7 +94,7 @@ int show_usage(const char *name)
 	printf("Version: %s\n", _VERSION);
 	printf("Date: %s\n", __DATE__);
 	printf("Author: qianshanhai\n");
-	printf("Usage: %s <-n name> <-c compress> <-i idx> <-d dict>\n", name);
+	printf("Usage: %s <-n name> <-i idx> <-d dict>\n", name);
 
 	exit(0);
 	return 0;
