@@ -147,7 +147,7 @@ int WikiData::wd_sys_read(int file_idx, unsigned int pos, int len, char *ret, in
 		return z_len;
 	}
 
-	int n;
+	int n = -1;
 
 	if (m_z_flag == FM_FLAG_LZ4) {
 		n = lz4_decompress(ret, ret_max, m_tmp, z_len);
