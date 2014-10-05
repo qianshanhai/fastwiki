@@ -200,7 +200,7 @@ int ffi_init_option(int argc, char *argv[])
 				strncpy(p->word_file, optarg, sizeof(p->word_file) - 1);
 				break;
 			case 'm':
-				p->mem_size = atoll(optarg);
+				p->mem_size = atoll(optarg) * 1024*1024L;
 				break;
 			case 't':
 				strncpy(p->tmp, optarg, sizeof(p->tmp) - 1);
