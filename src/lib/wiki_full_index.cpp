@@ -993,6 +993,7 @@ int WikiFullIndex::wfi_flush_all_data()
 	}
 
 	close(m_tmp_fd);
+	close(m_wfi_curr_pos.fd);
 
 #ifndef DEBUG
 	unlink(_WFI_TMP_HASH_FNAME);
@@ -1156,7 +1157,7 @@ int WikiFullIndex::wfi_flush_full_index()
 
 	wfi_get_fidx_fname(file, m_lang, 0);
 
-	if ((fd2 = open(file, O_RDONLY)) == -1) {
+	if ((fd2 = open(file, O_RDONLY | O_BINARY)) == -1) {
 		LOG("read file %s error: %s\n", file, strerror(errno));
 		return -1;
 	}
@@ -1167,6 +1168,7 @@ int WikiFullIndex::wfi_flush_full_index()
 	close(fd2);
 	close(fd);
 
+	unlink(file);
 	rename(tmp_file, file);
 
 	wfi_rewrite_file_head(&head);
