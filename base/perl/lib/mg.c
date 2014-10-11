@@ -37,6 +37,10 @@ tie.
 
 */
 
+#ifdef WIN32
+#define DWORD long
+#endif
+
 #include "EXTERN.h"
 #define PERL_IN_MG_C
 #include "perl.h"

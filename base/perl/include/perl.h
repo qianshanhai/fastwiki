@@ -2861,7 +2861,7 @@ typedef pthread_key_t	perl_key;
 #endif /* USE_ITHREADS */
 
 #if defined(WIN32)
-#  include "win32.h"
+//#  include "win32.h"
 #endif
 
 #ifdef NETWARE

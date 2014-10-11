@@ -53,6 +53,32 @@ int putenv(char *);
 #  define FD_CLOEXEC 1			/* NeXT needs this */
 #endif
 
+#ifdef WIN32
+int sleep(int s)
+{
+	return 0;
+}
+
+int pipe(int f[2])
+{
+	return -1;
+}
+
+int fork()
+{
+	return 0;
+}
+
+int wait(int *status)
+{
+	*status = 0;
+	return 0;
+}
+
+#define do_exec3
+
+#endif
+
 /* NOTE:  Do not call the next three routines directly.  Use the macros
  * in handy.h, so that we can easily redefine everything to do tracking of
  * allocated hunks back to the original New to track down any memory leaks.

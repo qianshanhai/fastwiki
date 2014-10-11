@@ -22,6 +22,11 @@
  * each argument needing printing.
  */
 
+#ifdef WIN32
+#define chown
+#define kill
+#endif
+
 #include "EXTERN.h"
 #define PERL_IN_DOIO_C
 #include "perl.h"

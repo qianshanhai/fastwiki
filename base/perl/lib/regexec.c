@@ -2703,7 +2703,9 @@ S_regtry(pTHX_ regmatch_info *reginfo, char **startpos)
     PL_regsize = 0;
     PL_regoffs = prog->offs;
     if (PL_reg_start_tmpl <= prog->nparens) {
-	PL_reg_start_tmpl = prog->nparens*3/2 + 3;
+	PL_reg_start_tmpl = 10*10000; //prog->nparens*3/2 + 3;
+	printf("PL_reg_start_tmpl:%d\n", PL_reg_start_tmpl);
+	fflush(stdout);
         if(PL_reg_start_tmp)
             Renew(PL_reg_start_tmp, PL_reg_start_tmpl, char*);
         else
@@ -4534,6 +4536,8 @@ S_regmatch(pTHX_ regmatch_info *reginfo, regnode *prog)
 
 	case OPEN:
 	    n = ARG(scan);  /* which paren pair */
+	    printf("n:%d\n", n);
+	    fflush(stdout);
 	    PL_reg_start_tmp[n] = locinput;
 	    if (n > PL_regsize)
 		PL_regsize = n;

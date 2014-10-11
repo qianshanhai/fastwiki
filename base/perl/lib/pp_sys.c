@@ -32,6 +32,20 @@
 #include "time64.h"
 #include "time64.c"
 
+#ifdef WIN32
+#define ioctl(...) 0
+int do_exec3(int len, ...)
+{
+	return 0;
+}
+
+bool Perl_do_exec(pTHX_ const char* cmd)
+{
+	return 0;
+}
+#endif
+
+
 #ifdef I_SHADOW
 /* Shadow password support for solaris - pdo@cs.umd.edu
  * Not just Solaris: at least HP-UX, IRIX, Linux.

@@ -28,6 +28,72 @@
 #  define USE_SITECUSTOMIZE
 #endif
 
+#ifdef WIN32
+
+int setgid(int i)
+{
+	return 0;
+}
+
+int setuid(int i)
+{
+	return 0;
+}
+int getuid(void)
+{
+	return 0;
+}
+
+int geteuid(void)
+{
+	return 0;
+}
+
+int getgid(void)
+{
+	return 0;
+}
+int getegid(void)
+{
+	return 0;
+}
+
+char *
+win32_get_sitelib(const char *pl, int *const len)
+{
+	*len = 0;
+	return (char *)"";
+}
+
+char *
+win32_get_privlib(const char *pl, int *const len)
+{
+	*len = 0;
+
+	return (char *)"";
+}
+
+void win32_str_os_error(void *sv, long dwErr)
+{
+	strcpy((char *)sv, "");
+}
+
+void
+Perl_win32_init(int *argcp, char ***argvp)
+{
+}
+
+void
+Perl_win32_term(void)
+{
+}
+
+int Stat(const char *path, struct stat *sbuf)
+{
+	return stat(path, sbuf);
+}
+#endif
+
 #include "EXTERN.h"
 #define PERL_IN_PERL_C
 #include "perl.h"
@@ -2959,9 +3025,10 @@ NULL
     const char * const *p = usage_msg;
     PerlIO *out = PerlIO_stdout();
 
-    PerlIO_printf(out,
+    PerlIO_printf(out, "Perl library for fastwiki (https://fastwiki.me): \n"
+		    "Compile by Qianshanhai <qianshanhai At gmail Dot com>, Date: %s %s\n"
 		  "\nUsage: %s [switches] [--] [programfile] [arguments]\n",
-		  PL_origargv[0]);
+		  __DATE__, __TIME__, PL_origargv[0]);
     while (*p)
 	PerlIO_puts(out, *p++);
     my_exit(0);
