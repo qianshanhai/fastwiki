@@ -30,7 +30,7 @@ the C<SP> macro.  See C<SP>.
 
 =for apidoc ms||djSP
 
-Declare Just C<SP>. This is actually identical to C<dSP>, and declares
+Declare Just C<SP>.  This is actually identical to C<dSP>, and declares
 a local copy of perl's stack pointer, available via the C<SP> macro.
 See C<SP>.  (Available for backward source code compatibility with the
 old (Perl 5.005) thread model.)
@@ -57,7 +57,7 @@ Refetch the stack pointer.  Used after a callback.  See L<perlcall>.
 
 #define PUSHMARK(p)	\
 	STMT_START {					\
-	    if (++PL_markstack_ptr == PL_markstack_max)	\
+	    if (UNLIKELY(++PL_markstack_ptr == PL_markstack_max))	\
 	    markstack_grow();				\
 	    *PL_markstack_ptr = (I32)((p) - PL_stack_base);\
 	} STMT_END
@@ -67,7 +67,7 @@ Refetch the stack pointer.  Used after a callback.  See L<perlcall>.
 
 #define dSP		SV **sp = PL_stack_sp
 #define djSP		dSP
-#define dMARK		register SV **mark = PL_stack_base + POPMARK
+#define dMARK		SV **mark = PL_stack_base + POPMARK
 #define dORIGMARK	const I32 origmark = (I32)(mark - PL_stack_base)
 #define ORIGMARK	(PL_stack_base + origmark)
 
@@ -97,10 +97,11 @@ See C<PUSHMARK> and L<perlcall> for other uses.
 Pops an SV off the stack.
 
 =for apidoc Amn|char*|POPp
-Pops a string off the stack. Deprecated. New code should use POPpx.
+Pops a string off the stack.
 
 =for apidoc Amn|char*|POPpx
-Pops a string off the stack.
+Pops a string off the stack.  Identical to POPp.  There are two names for
+historical reasons.
 
 =for apidoc Amn|char*|POPpbytex
 Pops a string off the stack which must consist of bytes i.e. characters < 256.
@@ -123,7 +124,7 @@ Pops a long off the stack.
 #define RETURNX(x)	return (x, PUTBACK, NORMAL)
 
 #define POPs		(*sp--)
-#define POPp		(SvPVx(POPs, PL_na))		/* deprecated */
+#define POPp		POPpx
 #define POPpx		(SvPVx_nolen(POPs))
 #define POPpconstx	(SvPVx_nolen_const(POPs))
 #define POPpbytex	(SvPVbytex_nolen(POPs))
@@ -132,31 +133,23 @@ Pops a long off the stack.
 #define POPu		((UV)SvUVx(POPs))
 #define POPl		((long)SvIVx(POPs))
 #define POPul		((unsigned long)SvIVx(POPs))
-#ifdef HAS_QUAD
-#define POPq		((Quad_t)SvIVx(POPs))
-#define POPuq		((Uquad_t)SvUVx(POPs))
-#endif
 
 #define TOPs		(*sp)
 #define TOPm1s		(*(sp-1))
 #define TOPp1s		(*(sp+1))
-#define TOPp		(SvPV(TOPs, PL_na))		/* deprecated */
+#define TOPp		TOPpx
 #define TOPpx		(SvPV_nolen(TOPs))
 #define TOPn		(SvNV(TOPs))
 #define TOPi		((IV)SvIV(TOPs))
 #define TOPu		((UV)SvUV(TOPs))
 #define TOPl		((long)SvIV(TOPs))
 #define TOPul		((unsigned long)SvUV(TOPs))
-#ifdef HAS_QUAD
-#define TOPq		((Quad_t)SvIV(TOPs))
-#define TOPuq		((Uquad_t)SvUV(TOPs))
-#endif
 
 /* Go to some pains in the rare event that we must extend the stack. */
 
 /*
-=for apidoc Am|void|EXTEND|SP|int nitems
-Used to extend the argument stack for an XSUB's return values. Once
+=for apidoc Am|void|EXTEND|SP|SSize_t nitems
+Used to extend the argument stack for an XSUB's return values.  Once
 used, guarantees that there is room for at least C<nitems> to be pushed
 onto the stack.
 
@@ -277,16 +270,25 @@ Does not use C<TARG>.  See also C<XPUSHu>, C<mPUSHu> and C<PUSHu>.
 =cut
 */
 
-#define EXTEND(p,n)	STMT_START { if (PL_stack_max - p < (int)(n)) {		\
-			    sp = stack_grow(sp,p, (int) (n));		\
-			} } STMT_END
+#ifdef STRESS_REALLOC
+# define EXTEND(p,n)	(void)(sp = stack_grow(sp,p, (SSize_t)(n)))
+/* Same thing, but update mark register too. */
+# define MEXTEND(p,n)	STMT_START {					\
+			    const int markoff = mark - PL_stack_base;	\
+			    sp = stack_grow(sp,p,(SSize_t) (n));	\
+			    mark = PL_stack_base + markoff;		\
+			} STMT_END
+#else
+# define EXTEND(p,n)   (void)(UNLIKELY(PL_stack_max - p < (SSize_t)(n)) &&     \
+			    (sp = stack_grow(sp,p, (SSize_t) (n))))
 
 /* Same thing, but update mark register too. */
-#define MEXTEND(p,n)	STMT_START {if (PL_stack_max - p < (int)(n)) {	\
-			    const int markoff = mark - PL_stack_base;	\
-			    sp = stack_grow(sp,p,(int) (n));		\
-			    mark = PL_stack_base + markoff;		\
-			} } STMT_END
+# define MEXTEND(p,n)  STMT_START {if (UNLIKELY(PL_stack_max - p < (int)(n))) {\
+                           const int markoff = mark - PL_stack_base;           \
+                           sp = stack_grow(sp,p,(SSize_t) (n));                \
+                           mark = PL_stack_base + markoff;                     \
+                       } } STMT_END
+#endif
 
 #define PUSHs(s)	(*++sp = (s))
 #define PUSHTARG	STMT_START { SvSETMAGIC(TARG); PUSHs(TARG); } STMT_END
@@ -295,7 +297,7 @@ Does not use C<TARG>.  See also C<XPUSHu>, C<mPUSHu> and C<PUSHu>.
 #define PUSHi(i)	STMT_START { sv_setiv(TARG, (IV)(i)); PUSHTARG; } STMT_END
 #define PUSHu(u)	STMT_START { sv_setuv(TARG, (UV)(u)); PUSHTARG; } STMT_END
 
-#define XPUSHs(s)	STMT_START { EXTEND(sp,1); (*++sp = (s)); } STMT_END
+#define XPUSHs(s)	(EXTEND(sp,1), *++sp = (s))
 #define XPUSHTARG	STMT_START { SvSETMAGIC(TARG); XPUSHs(TARG); } STMT_END
 #define XPUSHp(p,l)	STMT_START { sv_setpvn(TARG, (p), (l)); XPUSHTARG; } STMT_END
 #define XPUSHn(n)	STMT_START { sv_setnv(TARG, (NV)(n)); XPUSHTARG; } STMT_END
@@ -333,12 +335,6 @@ Does not use C<TARG>.  See also C<XPUSHu>, C<mPUSHu> and C<PUSHu>.
 #define dPOPiv		IV value = POPi
 #define dTOPuv		UV value = TOPu
 #define dPOPuv		UV value = POPu
-#ifdef HAS_QUAD
-#define dTOPqv		Quad_t value = TOPu
-#define dPOPqv		Quad_t value = POPu
-#define dTOPuqv		Uquad_t value = TOPuq
-#define dPOPuqv		Uquad_t value = POPuq
-#endif
 
 #define dPOPXssrl(X)	SV *right = POPs; SV *left = CAT2(X,s)
 #define dPOPXnnrl(X)	NV right = POPn; NV left = CAT2(X,n)
@@ -388,7 +384,7 @@ Does not use C<TARG>.  See also C<XPUSHu>, C<mPUSHu> and C<PUSHu>.
 
 #define EXTEND_MORTAL(n) \
     STMT_START {							\
-	if (PL_tmps_ix + (n) >= PL_tmps_max)				\
+	if (UNLIKELY(PL_tmps_ix + (n) >= PL_tmps_max))			\
 	    tmps_grow(n);						\
     } STMT_END
 
@@ -398,17 +394,18 @@ Does not use C<TARG>.  See also C<XPUSHu>, C<mPUSHu> and C<PUSHu>.
 #define AMGf_unary	8
 #define AMGf_numeric	0x10	/* for Perl_try_amagic_bin */
 #define AMGf_set	0x20	/* for Perl_try_amagic_bin */
+#define AMGf_want_list	0x40
 
 
 /* do SvGETMAGIC on the stack args before checking for overload */
 
 #define tryAMAGICun_MG(method, flags) STMT_START { \
-	if ( (SvFLAGS(TOPs) & (SVf_ROK|SVs_GMG)) \
+	if ( UNLIKELY((SvFLAGS(TOPs) & (SVf_ROK|SVs_GMG))) \
 		&& Perl_try_amagic_un(aTHX_ method, flags)) \
 	    return NORMAL; \
     } STMT_END
 #define tryAMAGICbin_MG(method, flags) STMT_START { \
-	if ( ((SvFLAGS(TOPm1s)|SvFLAGS(TOPs)) & (SVf_ROK|SVs_GMG)) \
+	if ( UNLIKELY(((SvFLAGS(TOPm1s)|SvFLAGS(TOPs)) & (SVf_ROK|SVs_GMG))) \
 		&& Perl_try_amagic_bin(aTHX_ method, flags)) \
 	    return NORMAL; \
     } STMT_END
@@ -419,21 +416,38 @@ Does not use C<TARG>.  See also C<XPUSHu>, C<mPUSHu> and C<PUSHu>.
 /* No longer used in core. Use AMG_CALLunary instead */
 #define AMG_CALLun(sv,meth) AMG_CALLunary(sv, CAT2(meth,_amg))
 
-#define tryAMAGICunTARGET(meth, shift, jump)			\
+#define tryAMAGICunTARGETlist(meth, jump)			\
     STMT_START {						\
-	dATARGET;						\
 	dSP;							\
 	SV *tmpsv;						\
-	SV *arg= sp[shift];					\
-	if (SvAMAGIC(arg) &&					\
+	SV *arg= *sp;						\
+        int gimme = GIMME_V;                                    \
+	if (UNLIKELY(SvAMAGIC(arg) &&				\
 	    (tmpsv = amagic_call(arg, &PL_sv_undef, meth,	\
-				 AMGf_noright | AMGf_unary))) {	\
+				 AMGf_want_list | AMGf_noright	\
+				|AMGf_unary))))                 \
+        {                                       		\
 	    SPAGAIN;						\
-	    sp += shift;					\
-	    sv_setsv(TARG, tmpsv);				\
-	    if (opASSIGN)					\
-		sp--;						\
-	    SETTARG;						\
+            if (gimme == G_VOID) {                              \
+                (void)POPs; /* XXX ??? */                       \
+            }                                                   \
+            else if (gimme == G_ARRAY) {			\
+                SSize_t i;                                      \
+                SSize_t len;                                    \
+                assert(SvTYPE(tmpsv) == SVt_PVAV);              \
+                len = av_tindex((AV *)tmpsv) + 1;               \
+                (void)POPs; /* get rid of the arg */            \
+                EXTEND(sp, len);                                \
+                for (i = 0; i < len; ++i)                       \
+                    PUSHs(av_shift((AV *)tmpsv));               \
+            }                                                   \
+            else { /* AMGf_want_scalar */                       \
+                dATARGET; /* just use the arg's location */     \
+                sv_setsv(TARG, tmpsv);                          \
+                if (opASSIGN)                                   \
+                    sp--;                                       \
+                SETTARG;                                        \
+            }                                                   \
 	    PUTBACK;						\
 	    if (jump) {						\
 	        OP *jump_o = NORMAL->op_next;                   \
@@ -476,8 +490,8 @@ True if this op will be the return value of an lvalue subroutine
 
 #define SvCANEXISTDELETE(sv) \
  (!SvRMAGICAL(sv)            \
-  || ((mg = mg_find((const SV *) sv, PERL_MAGIC_tied))           \
-      && (stash = SvSTASH(SvRV(SvTIED_obj(MUTABLE_SV(sv), mg)))) \
+  || !(mg = mg_find((const SV *) sv, PERL_MAGIC_tied))           \
+  || (   (stash = SvSTASH(SvRV(SvTIED_obj(MUTABLE_SV(sv), mg)))) \
       && gv_fetchmethod_autoload(stash, "EXISTS", TRUE)          \
       && gv_fetchmethod_autoload(stash, "DELETE", TRUE)          \
      )                       \
@@ -497,7 +511,7 @@ True if this op will be the return value of an lvalue subroutine
     (                                                               \
 	(void)(phlags & SV_GMAGIC && (SvGETMAGIC(sv),0)),            \
 	isGV_with_GP(sv)                                              \
-	  ? (GV *)sv                                                   \
+	  ? (GV *)(sv)                                                \
 	  : SvROK(sv) && SvTYPE(SvRV(sv)) <= SVt_PVLV &&               \
 	    (SvGETMAGIC(SvRV(sv)), isGV_with_GP(SvRV(sv)))              \
 	     ? (GV *)SvRV(sv)                                            \
@@ -506,14 +520,17 @@ True if this op will be the return value of an lvalue subroutine
 #  define MAYBE_DEREF_GV(sv)      MAYBE_DEREF_GV_flags(sv,SV_GMAGIC)
 #  define MAYBE_DEREF_GV_nomg(sv) MAYBE_DEREF_GV_flags(sv,0)
 
+#  define FIND_RUNCV_padid_eq	1
+#  define FIND_RUNCV_level_eq	2
+
 #endif
 
 /*
  * Local variables:
  * c-indentation-style: bsd
  * c-basic-offset: 4
- * indent-tabs-mode: t
+ * indent-tabs-mode: nil
  * End:
  *
- * ex: set ts=8 sts=4 sw=4 noet:
+ * ex: set ts=8 sts=4 sw=4 et:
  */

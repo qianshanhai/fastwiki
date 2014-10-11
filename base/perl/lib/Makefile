@@ -1,5 +1,5 @@
 cc  = gcc
-cflag = -g -Dregister= -DPERLDLL -DPERL_CORE -DPERL_MICRO -DSTANDARD_C -DPERL_USE_SAFE_PUTENV \
+cflag = -g -DDWORD=long -DPERLDLL -DPERL_CORE -DPERL_MICRO -DSTANDARD_C -DPERL_USE_SAFE_PUTENV \
 	  -DNO_MATHOMS -DStrtol=strtol 
 inc = -I../include -I.
 

@@ -22,7 +22,7 @@ class name for a C++ XS constructor.  This is always a C<char*>.  See C<THIS>.
 
 =for apidoc Amn|(whatever)|RETVAL
 Variable which is setup by C<xsubpp> to hold the return value for an 
-XSUB. This is always the proper type for the XSUB. See 
+XSUB.  This is always the proper type for the XSUB.  See 
 L<perlxs/"The RETVAL Variable">.
 
 =for apidoc Amn|(whatever)|THIS
@@ -48,7 +48,7 @@ Used to access elements on the XSUB's stack.
 
 =for apidoc AmU||XS
 Macro to declare an XSUB and its C parameter list.  This is handled by
-C<xsubpp>. It is the same as using the more explicit XS_EXTERNAL macro.
+C<xsubpp>.  It is the same as using the more explicit XS_EXTERNAL macro.
 
 =for apidoc AmU||XS_INTERNAL
 Macro to declare an XSUB and its C parameter list without exporting the symbols.
@@ -80,12 +80,12 @@ Sets up the C<ix> variable for an XSUB which has aliases.  This is usually
 handled automatically by C<xsubpp>.
 
 =for apidoc Ams||dUNDERBAR
-Sets up any variable needed by the C<UNDERBAR> macro. It used to define
-C<padoff_du>, but it is currently a noop. However, it is strongly advised
+Sets up any variable needed by the C<UNDERBAR> macro.  It used to define
+C<padoff_du>, but it is currently a noop.  However, it is strongly advised
 to still use it for ensuring past and future compatibility.
 
 =for apidoc AmU||UNDERBAR
-The SV* corresponding to the $_ variable. Works even if there
+The SV* corresponding to the $_ variable.  Works even if there
 is a lexical $_ in scope.
 
 =cut
@@ -159,7 +159,7 @@ is a lexical $_ in scope.
 
 #define dAXMARK				\
 	I32 ax = POPMARK;	\
-	register SV **mark = PL_stack_base + ax++
+	SV **mark = PL_stack_base + ax++
 
 #define dITEMS I32 items = (I32)(SP - MARK)
 
@@ -635,18 +635,16 @@ Rethrows a previously caught exception.  See L<perlguts/"Exception Handling">.
 #    define socketpair		PerlSock_socketpair
 #	endif	/* NETWARE && USE_STDIO */
 
-#    ifdef USE_SOCKETS_AS_HANDLES
-#      undef fd_set
-#      undef FD_SET
-#      undef FD_CLR
-#      undef FD_ISSET
-#      undef FD_ZERO
-#      define fd_set		Perl_fd_set
-#      define FD_SET(n,p)	PERL_FD_SET(n,p)
-#      define FD_CLR(n,p)	PERL_FD_CLR(n,p)
-#      define FD_ISSET(n,p)	PERL_FD_ISSET(n,p)
-#      define FD_ZERO(p)	PERL_FD_ZERO(p)
-#    endif	/* USE_SOCKETS_AS_HANDLES */
+#    undef fd_set
+#    undef FD_SET
+#    undef FD_CLR
+#    undef FD_ISSET
+#    undef FD_ZERO
+#    define fd_set		Perl_fd_set
+#    define FD_SET(n,p)		PERL_FD_SET(n,p)
+#    define FD_CLR(n,p)		PERL_FD_CLR(n,p)
+#    define FD_ISSET(n,p)	PERL_FD_ISSET(n,p)
+#    define FD_ZERO(p)		PERL_FD_ZERO(p)
 
 #  endif  /* NO_XSLOCKS */
 #endif  /* PERL_IMPLICIT_SYS && !PERL_CORE */
@@ -657,8 +655,8 @@ Rethrows a previously caught exception.  See L<perlguts/"Exception Handling">.
  * Local variables:
  * c-indentation-style: bsd
  * c-basic-offset: 4
- * indent-tabs-mode: t
+ * indent-tabs-mode: nil
  * End:
  *
- * ex: set ts=8 sts=4 sw=4 noet:
+ * ex: set ts=8 sts=4 sw=4 et:
  */

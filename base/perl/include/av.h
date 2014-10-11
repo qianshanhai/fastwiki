@@ -47,7 +47,10 @@ Null AV pointer.
 =head1 Array Manipulation Functions
 
 =for apidoc Am|int|AvFILL|AV* av
-Same as C<av_len()>.  Deprecated, use C<av_len()> instead.
+Same as C<av_top_index()>.  Deprecated, use C<av_top_index()> instead.
+
+=for apidoc Am|int|av_tindex|AV* av
+Same as C<av_top_index()>.
 
 =cut
 */
@@ -70,11 +73,15 @@ Same as C<av_len()>.  Deprecated, use C<av_len()> instead.
 #define AvREIFY_on(av)	(SvFLAGS(av) |= SVpav_REIFY)
 #define AvREIFY_off(av)	(SvFLAGS(av) &= ~SVpav_REIFY)
 #define AvREIFY_only(av)	(AvREAL_off(av), SvFLAGS(av) |= SVpav_REIFY)
+#define AvPAD_NAMELIST(av)	(SvFLAGS(av) & SVpad_NAMELIST)
+#define AvPAD_NAMELIST_on(av)	(SvFLAGS(av) |= SVpad_NAMELIST)
+
 
 #define AvREALISH(av)	(SvFLAGS(av) & (SVpav_REAL|SVpav_REIFY))
                                           
 #define AvFILL(av)	((SvRMAGICAL((const SV *) (av))) \
 			 ? mg_size(MUTABLE_SV(av)) : AvFILLp(av))
+#define av_tindex(av)   av_top_index(av)
 
 #define NEGATIVE_INDICES_VAR "NEGATIVE_INDICES"
 
@@ -94,8 +101,8 @@ Perl equivalent: C<my @array;>.
  * Local variables:
  * c-indentation-style: bsd
  * c-basic-offset: 4
- * indent-tabs-mode: t
+ * indent-tabs-mode: nil
  * End:
  *
- * ex: set ts=8 sts=4 sw=4 noet:
+ * ex: set ts=8 sts=4 sw=4 et:
  */
