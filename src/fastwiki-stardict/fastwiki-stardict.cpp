@@ -4,140 +4,65 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef _WIN32
-#include <winsock2.h>
-#else
-#include <arpa/inet.h>
-#endif
-
 #include "q_util.h"
+#include "wiki_common.h"
 
-#include "fastwiki-dict.h"
-
-#ifdef _STARDICT_PERL
-extern int script_init(const char *file);
-extern int perl_content(char *ret_buf);
-#endif
-
-static FastwikiDict *m_dict = NULL;
-static char *curr_title = NULL;
-static int curr_title_len = 0;
-static char *curr_content = NULL;
-static int curr_content_len = 0;
-
-int fastwiki_stardict_find_title(const char *title, int len)
-{
-	return m_dict->dict_find_title(title, len);
-}
-
-char *fastwiki_stardict_curr_title(int *len)
-{
-	*len = curr_title_len;
-
-	return curr_title;
-}
-
-char *fastwiki_stardict_curr_content(int *len)
-{
-	*len = curr_content_len;
-
-	return curr_content;
-}
-
-static char *m_buf;
-
-char *page_format(const char *page, int size, int *ret_len, const char *title, int title_len)
-{
-	int i, len = 0;
-
-	len = sprintf(m_buf, "<b>%s</b> ", title);
-
-	if (page[0] == '*') {
-		page++;
-		size--;
-	}
-
-	for (i = 0; i < size; i++) {
-		if (page[i] == 0)
-			continue;
-
-		if (page[i] == '\n') {
-			memcpy(m_buf + len, "<br/>\n", 6);
-			len += 6;
-		} else if (page[i] == '<') {
-			m_buf[len++] = '[';
-		} else if (page[i] == '>') {
-			m_buf[len++] = ']';
-		} else {
-			m_buf[len++] = page[i];
-		}
-	}
-
-	*ret_len = len;
-
-	return m_buf;
-}
-
-struct fw_stardict_st {
-	char name[128];
-	char perl_file[128];
-	char idx[128];
-	char dict[128];
-	char compress[128];
-	int perl_flag;
-};
+#include "stardict.h"
 
 static struct fw_stardict_st m_dict_option;
 
-int show_usage(const char *name)
+void usage(const char *name)
 {
-	printf("Version: %s\n", _VERSION);
-	printf("Date: %s\n", __DATE__);
-	printf("Author: qianshanhai\n");
-	printf("Usage: %s <-n name> <-i idx> <-d dict>\n", name);
+	print_usage_head();
+	printf("Usage: fastwiki-stardict <-l lang> <-d date> <-i idx> <-t dict> [-s lua] [-m max_total]\n");
+	printf( "       -l lang\n"
+			"       -d date\n"
+			"       -i stardict idx file\n"
+			"       -t stardict dict file\n"
+			"       -s lua script file\n"
+			"       -m max total. this is debug option, just output article total for -m \n"
+			".\n");
 
 	exit(0);
-	return 0;
 }
 
-#define check_option(_x, _y, _n) \
-	else if (strcmp(p, _x) == 0 || strcmp(p, _y) == 0) \
-		do { \
-			if (i >= argc - 1) \
-				show_usage(argv[0]); \
-			i++; \
-			strcpy(st->_n, argv[i]); \
-		} while (0)
+#define getopt_str(x, buf) \
+	case x: strncpy(buf, optarg, sizeof(buf) - 1); break
 
-#define check_option_other() else { show_usage(argv[0]); }
+#define getopt_int(x, buf) \
+	case x: buf = atoi(optarg); break
 
 static int init_option(struct fw_stardict_st *st, int argc, char **argv)
 {
+	int opt;
+
 	memset(st, 0, sizeof(*st));
 
 	if (argc == 1)
-		show_usage(argv[0]);
+		usage(argv[0]);
 
-	for (int i = 1; i < argc; i++) {
-		char *p = argv[i];
-		if (strcmp(p, "-h") == 0 || strcmp(p, "-help") == 0) {
-			show_usage(argv[0]);
+	while ((opt = getopt(argc, argv, "l:d:i:t:s:m:c:")) != -1) {
+		switch (opt) {
+			getopt_str('l', st->lang);
+			getopt_str('d', st->date);
+			getopt_str('i', st->idx);
+			getopt_str('t', st->dict);
+			getopt_str('s', st->script_file);
+			getopt_str('c', st->compress);
+			getopt_int('m', st->max_total);
 		}
-		check_option("-n", "-name", name);
-		check_option("-p", "-perl", perl_file);
-		check_option("-i", "-idx", idx);
-		check_option("-d", "-dict", dict);
-		check_option("-c", "-compress", compress);
-		check_option_other();
 	}
+
+	if (st->lang[0] == 0 || st->date[0] == 0 || st->idx[0] == 0 || st->dict[0] == 0)
+		usage(argv[0]);
 
 	if (st->compress[0] == 0)
 		strcpy(st->compress, "gzip");
 
-#ifdef _STARDICT_PERL
-	if (dashf(st->perl_file) && script_init(st->perl_file) == 0)
-		st->perl_flag = 1;
-#endif
+	if (!dashf(st->script_file)) {
+		printf("Not found %s\n", st->script_file);
+		usage(argv[0]);
+	}
 
 	if (!dashf(st->idx)) {
 		printf("%s: %s\n", st->idx, strerror(errno));
@@ -146,87 +71,6 @@ static int init_option(struct fw_stardict_st *st, int argc, char **argv)
 	if (!dashf(st->dict)) {
 		printf("%s: %s\n", st->dict, strerror(errno));
 	}
-
-	return 0;
-}
-
-int dict_read_file(const char *file, char *buf, int size)
-{
-	int fd;
-
-	if ((fd = open(file, O_RDONLY | O_BINARY)) == -1)
-		return -1;
-
-	read(fd, buf, size);
-	close(fd);
-
-	return 0;
-}
-
-int convert_dict(struct fw_stardict_st *st)
-{
-	int idx_file_size = (int)file_size(st->idx);
-	int dict_file_size = (int)file_size(st->dict);
-
-	if (idx_file_size <= 0 || dict_file_size <= 0)
-		return 0;
-
-	char *pidx = (char *)malloc(idx_file_size + 1);
-	char *pdata = (char *)malloc(dict_file_size + 1);
-
-	dict_read_file(st->idx, pidx, idx_file_size);
-	dict_read_file(st->dict, pdata, dict_file_size);
-
-	m_dict = new FastwikiDict();
-
-	m_dict->dict_init(st->name, "20131125", st->compress);
-
-	m_buf = (char *)malloc(5*1024*1024);
-
-	int len;
-
-	for (int pos = 0; pos < idx_file_size ; ) {
-		curr_title = pidx + pos;
-		len = curr_title_len = strlen(curr_title);
-
-		m_dict->dict_add_title(curr_title, curr_title_len);
-
-		pos += len + 1 + 8;
-	}
-
-	m_dict->dict_add_title_done();
-
-
-	for (int pos = 0; pos < idx_file_size; ) {
-		curr_title = pidx + pos;
-		len = curr_title_len = strlen(curr_title);
-
-		int index = htonl(*(unsigned int *)(pidx + pos + len + 1));
-		int size = htonl(*(unsigned int *)(pidx + pos + len + 5));
-
-		int ret_len;
-		char *buf;
-
-		curr_content = pdata + index;
-		curr_content_len = size;
-		
-#ifdef _STARDICT_PERL
-		if (m_dict_option.perl_flag)
-		{
-			ret_len = perl_content(m_buf);
-			buf = m_buf;
-		} else
-#endif
-		{
-			buf = page_format(curr_content, curr_content_len, &ret_len, curr_title, curr_title_len);
-		}
-
-		m_dict->dict_add_page(buf, ret_len, curr_title, curr_title_len);
-
-		pos += len + 1 + 8;
-	}
-
-	m_dict->dict_output();
 
 	return 0;
 }
