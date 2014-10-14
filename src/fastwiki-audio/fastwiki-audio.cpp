@@ -15,13 +15,15 @@
 
 #include "wiki_audio.h"
 
+#define MAX_ONE_AUDIO_FILE (10*1024*1024)
+
 struct fa_option {
 	char dir[128];
 	char file_type[128];
 	char outfile[128];
 	split_t sp;
 	int total;
-	char *buf; /* 5MB */
+	char buf[MAX_ONE_AUDIO_FILE];
 };
 
 struct fa_option *m_option = NULL;
@@ -72,8 +74,6 @@ int fa_init_option(int argc, char *argv[])
 		trim(T);
 	}
 
-	p->buf = (char *)malloc(5*1024*1024);
-
 	return 0;
 }
 
@@ -97,33 +97,38 @@ int fa_count_total(const char *file)
 	return 0;
 }
 
-int fa_add_one_file(const char *file)
+int fa_parse_fname(const char *file, char *name, char *type)
 {
-	char *p, *title, buf[256];
+	char *p, *t, buf[256];
 
 	strcpy(buf, file);
 	if ((p = strrchr(buf, '.')) == NULL)
-		return 0;
+		return -1;
 
 	*p++ = 0;
 
-	if ((title = strrchr(buf, '/')))
-		title++;
+	if ((t = strrchr(buf, '/')))
+		t++;
 	else
-		title = buf;
+		t= buf;
 
-	int fd = open(file, O_RDONLY | O_BINARY);
+	strcpy(name, t);
+	strcpy(type, p);
 
-	if (fd == -1) {
-		LOG("open file %s: %s\n", file, strerror(errno));
+	return 0;
+}
+
+int fa_add_one_file(const char *file)
+{
+	int len;
+	char title[256], type[64];
+
+	if (fa_parse_fname(file, title, type) == -1)
 		return -1;
+
+	if ((len = q_read_file(file, m_option->buf, MAX_ONE_AUDIO_FILE)) > 0) {
+		m_audio->wa_add_one_audio(title, m_option->buf, len, type);
 	}
-	int size = file_size(fd);
-	int len = read(fd, m_option->buf, size);
-
-	close(fd);
-
-	m_audio->wa_add_one_audio(title, m_option->buf, len, p);
 
 	return 0;
 }
