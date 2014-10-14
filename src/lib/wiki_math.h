@@ -86,12 +86,12 @@ class WikiMath {
 		int wm_zim_add_math(const char *fname, const char *data, int size);
 		int wm_zim_output();
 
-#ifdef __linux__
+#ifndef WIN32
 		int wm_start_one_thread(int idx);
 #endif
 
 	private:
-#ifdef __linux__
+#ifndef WIN32
 		int wm_system(char *tmp_dir, char *math_dir,
 				const char *math, char *out_fname);
 		int wm_do_one_math(int idx, char *math, int math_len, char *buf);
