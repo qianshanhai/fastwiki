@@ -19,6 +19,13 @@ typedef char fw_files_t[MAX_FD_TOTAL][128];
 
 typedef int (*compress_func_t)(char *out, int out_len, const char *in, int in_len);
 
+#define print_usage_head() \
+	do { \
+		printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__); \
+		printf("Author : %s\n", _AUTHOR); \
+		printf("Website: %s\n", _WEBSITE); \
+	} while (0)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
