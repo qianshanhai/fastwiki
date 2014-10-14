@@ -2,8 +2,8 @@
  * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
  */
 
-#ifndef __LIBMM_Q_UTIL_H
-#define __LIBMM_Q_UTIL_H
+#ifndef __FW_Q_UTIL_H
+#define __FW_Q_UTIL_H
 
 #include <stdio.h>
 #include <unistd.h>
@@ -122,5 +122,7 @@ ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 unsigned char q_hex(char ch);
 unsigned char q_hex2ch(const char *buf);
+
+extern "C" int q_read_file(const char *file, char *buf, int size);
 
 #endif

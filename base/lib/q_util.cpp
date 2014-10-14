@@ -8,6 +8,10 @@
 
 #include "q_util.h"
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 /*
  * check fname is or not file
  */
@@ -520,4 +524,17 @@ unsigned char q_hex2ch(const char *buf)
 	x = x * 16 + y;
 
 	return (unsigned char)x;
+}
+
+int q_read_file(const char *file, char *buf, int size)
+{
+	int n, fd;
+
+	if ((fd = open(file, O_RDONLY | O_BINARY)) == -1)
+		return -1;
+
+	n = read(fd, buf, size);
+	close(fd);
+
+	return n;
 }
