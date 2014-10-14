@@ -67,6 +67,9 @@ int WikiLua::lua_init(const char *file, content_func_t cf, title_func_t tf, find
 	m_script = (char *)malloc(MAX_LUA_FILE);
 
 	int n = q_read_file(file, m_script, MAX_LUA_FILE);
+	if (n <= 0)
+		return -1;
+
 	m_script[n] = 0;
 
 	return lua_init_script(NULL, cf, tf, ff);
@@ -96,14 +99,27 @@ int WikiLua::lua_init_sys(lua_State *L)
 	lua_register(L, "page_content", lua_page_content);
 	lua_register(L, "find_title", lua_find_title);
 
+	lua_newtable(L);
+	lua_pushstring(L, "title_flag");
+	lua_pushboolean(L, 0);
+	lua_settable(L, -3);
+	lua_setglobal(L, "fastwiki");
+
 	return 0;
 }
 
-int WikiLua::lua_content(char *ret_buf, int max_size)
+int WikiLua::lua_content(char *ret_buf, int max_size, int flag)
 {
 	size_t len = 0;
 	const char *s;
 	lua_State *L = m_lua;
+
+	if (flag >= 0 && flag <= 1) {
+		lua_getglobal(L, "fastwiki");
+		lua_pushstring(L, "title_flag");
+		lua_pushboolean(L, flag);
+		lua_settable(L, -3);
+	}
 
 	luaL_dostring(L, m_script);
 	int ret = lua_pcall(L, 0, 0, 0);

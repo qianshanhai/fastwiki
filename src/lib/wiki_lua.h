@@ -29,7 +29,7 @@ class WikiLua {
 
 		int lua_init(const char *file, content_func_t cf, title_func_t tf, find_title_func_t ff);
 		int lua_init_script(const char *script, content_func_t cf, title_func_t tf, find_title_func_t ff);
-		int lua_content(char *ret_buf, int max_size = 0);
+		int lua_content(char *ret_buf, int max_size = 0, int flag = -1);
 		int lua_init_sys(lua_State *L);
 };
 
