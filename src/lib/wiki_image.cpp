@@ -4,12 +4,6 @@
 #include "prime.h"
 #include "wiki_image.h"
 
-#ifdef WIN32
-#define pthread_mutex_init(x, y) 
-#define pthread_mutex_lock(x) 
-#define pthread_mutex_unlock(x) 
-#endif
-
 WikiImage::WikiImage()
 {
 	m_hash = NULL;
@@ -288,7 +282,9 @@ int WikiImage::we_add_done()
 	m_curr_size = 0;
 	close(m_curr_fd);
 
+#ifdef DEBUG
 	printf("total[%d] = %d\n", m_curr_file_idx, m_head.total);
+#endif
 
 	return 0;
 }
