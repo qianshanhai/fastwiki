@@ -11,14 +11,19 @@
 
 #include "s_hash.h"
 
+#define FASTWIKI_AUDIO_PREFIX "fastwiki.audio."
+#define FW_AUDIO_VERSION 0x1
+
 struct wiki_audio_head {
-	int flag;
-	char name[32];
+	int flag; /* 0xfafafa */
+	char name[32]; /* FASTWIKI_AUDIO_PREFIX */
+	int version;
 	unsigned int hash_pos;
 	unsigned int hash_size;
 	int max_size;
 	int total;
 	char r[128];
+	unsigned int crc32; /* crc32sum() */
 };
 
 struct audio_key {
@@ -49,11 +54,14 @@ class WikiAudio {
 		~WikiAudio();
 
 	public:
+		int wa_reinit(const char *file);
 		int wa_init(const char *file);
 		int wa_find(const char *title, char *data, int *len, int max_size);
 		int wa_find_pos(const char *title, unsigned int *pos, int *len);
 		int wa_get_fd();
 		int wa_stat();
+		int wa_check(struct wiki_audio_head *h);
+		int wa_check_file(const char *file);
 
 	public:
 		int wa_init_rw(int max_total, const char *outfile);
