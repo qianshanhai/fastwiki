@@ -29,7 +29,8 @@ struct audio_value {
 	unsigned int pos;
 	int len;
 	char type[8];
-	char r[16];
+	unsigned char flag[8];
+	char r[64];
 };
 
 class WikiAudio {
@@ -37,6 +38,7 @@ class WikiAudio {
 		int m_fd;
 		SHash *m_hash;
 		struct wiki_audio_head m_head;
+		int m_init_flag;
 
 		int m_max_total;
 		int m_max_size;

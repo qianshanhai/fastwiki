@@ -18,6 +18,7 @@ WikiAudio::WikiAudio()
 {
 	m_max_size = 0;
 	m_fd = -1;
+	m_init_flag = 0;
 }
 
 WikiAudio::~WikiAudio()
@@ -45,6 +46,8 @@ int WikiAudio::wa_init(const char *file)
 	m_hash = new SHash();
 	m_hash->sh_fd_init_ro(m_fd, m_head.hash_pos);
 
+	m_init_flag = 1;
+
 	return 0;
 }
 
@@ -71,6 +74,9 @@ int WikiAudio::wa_find_pos(const char *title, unsigned int *pos, int *len)
 {
 	struct audio_key key;
 	struct audio_value v;
+
+	if (m_init_flag == 0)
+		return -1;
 
 	memset(&key, 0, sizeof(key));
 	strncpy(key.title, title, sizeof(key.title) - 1);
