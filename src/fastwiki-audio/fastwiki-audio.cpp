@@ -13,6 +13,7 @@
 #include "q_util.h"
 #include "q_log.h"
 
+#include "wiki_common.h"
 #include "wiki_audio.h"
 
 #define MAX_ONE_AUDIO_FILE (10*1024*1024)
@@ -31,9 +32,9 @@ WikiAudio *m_audio = NULL;
 
 void usage(const char *name)
 {
-	printf("version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
-	printf("usage: fastwiki-audio <-d dir> <-t file type> <-o output file>\n");
-	printf( "       -d audio folder \n"
+	print_usage_head();
+	printf("usage: fastwiki-audio <-r dir> <-t file type> <-o output file>\n");
+	printf( "       -r audio folder \n"
 			"       -t file type, such as .wav, use ',' to split, \n"
 			"          for example: .wav,.mp3 , etc.\n"
 			"       -o output file name\n"
@@ -49,9 +50,9 @@ int fa_init_option(int argc, char *argv[])
 
 	memset(p, 0, sizeof(*p));
 
-	while ((opt = getopt(argc, argv, "d:t:o:")) != -1) {
+	while ((opt = getopt(argc, argv, "r:t:o:")) != -1) {
 		switch (opt) {
-			case 'd':
+			case 'r':
 				strncpy(p->dir, optarg, sizeof(p->dir) - 1);
 				break;
 			case 't':
@@ -83,7 +84,7 @@ int fa_match_fname(const char *fname, split_t &sp)
 
 	for_each_split(sp, T) {
 		int k = strlen(T);
-		if (len > k && strncasecmp(fname + len - k, T, k) == 0)
+		if (len >= k && strncasecmp(fname + len - k, T, k) == 0)
 			return 1;
 	}
 
