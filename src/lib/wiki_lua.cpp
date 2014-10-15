@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "q_log.h"
 #include "q_util.h"
 #include "wiki_lua.h"
 
@@ -121,8 +122,14 @@ int WikiLua::lua_content(char *ret_buf, int max_size, int flag)
 		lua_settable(L, -3);
 	}
 
-	luaL_dostring(L, m_script);
-	int ret = lua_pcall(L, 0, 0, 0);
+	int ret = luaL_dostring(L, m_script);
+	if (ret != LUA_OK) {
+		const char* error = lua_tostring(L, -1);
+		LOG("%s\n",error);  
+		lua_pop(L, 1);   
+
+		return 0;
+	}
 
 	lua_getglobal(L, "content");
 	s = lua_tolstring(L, -1, &len);
