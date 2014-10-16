@@ -212,7 +212,12 @@ int SHash::sh_fd_find(const void *key, void *value)
 
 	unsigned int offset;
 
-	crc32 = crc32sum((char *)key, head->key_len) % head->hash;
+	void *new_key;
+	int ret_len;
+
+	key_func(func_type, key, head->key_len, (void **)&new_key, &ret_len);
+
+	crc32 = crc32sum((char *)new_key, ret_len) % head->hash;
 
 	offset = m_pos + sizeof(struct shm_hash_head) + crc32 * sizeof(int);
 	lseek(fd, offset, SEEK_SET);
@@ -417,7 +422,7 @@ int SHash::sh_init_head(int flag)
 	if (flag) {
 		head->remalloc_flag = 0;
 		if (head->uptime == 0) {
-			head->uptime = (int)time(NULL);
+			//head->uptime = (int)time(NULL);
 			head->key_len = key_len;
 			head->value_len = value_len;
 		}
