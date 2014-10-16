@@ -40,7 +40,7 @@ void usage(const char *name)
 			"       -o output file name\n"
 			".\n");
 
-	exit(0);
+	print_usage_tail();
 }
 
 int fa_init_option(int argc, char *argv[])

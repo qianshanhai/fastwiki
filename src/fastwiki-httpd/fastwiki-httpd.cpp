@@ -321,6 +321,9 @@ static int my_find_match(_FW_URL_FUNC_ARGV)
 	sort_idx_t idx[MAX_FIND_RECORD];
 	char *key = http->hp_param("key");
 
+#ifdef DEBUG
+	LOG("key: %s: %02x%02x\n", key, (unsigned char)key[0], (unsigned char)key[1]);
+#endif
 	int len, total;
 	int match_flag = 0;
 

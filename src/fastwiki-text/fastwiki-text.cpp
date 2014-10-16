@@ -52,7 +52,7 @@ void usage(const char *name)
 			"       -m max total. this is debug option, just output article total for -m \n"
 			".\n");
 
-	exit(0);
+	print_usage_tail();
 }
 
 #define getopt_str(x, buf) \
@@ -363,6 +363,8 @@ int text_add_one_file(const char *file, text_parse_func_t func, int flag)
 
 		if ((len = m_lua->lua_content(m_option->buf, MAX_ONE_TEXT_FILE, flag)) <= 0)
 			return -1;
+		m_option->buf[len] = 0;
+		
 		func(m_option->buf, len);
 	} else {
 		func(file, 0);

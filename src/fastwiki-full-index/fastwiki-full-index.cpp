@@ -164,10 +164,10 @@ int start_create_index(const char *index_file, fw_files_t data_file, int total,
 	return 0;
 }
 
-int usage(const char *name)
+void usage(const char *name)
 {
-	printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
-	printf("Author: Qianshanhai\n");
+	print_usage_head();
+
 	printf("usage: fastwiki-full-index <-d dir> [-w word] [-m mem size] [-t tmp] [-p pthread total]\n");
 	printf( "       -d  the folder that include fastwiki data files.\n"
 			"       -w  mutil-byte language word list\n"
@@ -177,8 +177,7 @@ int usage(const char *name)
 			".\n"
 			);
 
-	exit(0);
-	return 0;
+	print_usage_tail();
 }
 
 int ffi_init_option(int argc, char *argv[])
@@ -255,7 +254,7 @@ int main(int argc, char *argv[])
 	}
 
 	m_word_hash = new SHash();
-	m_word_hash->sh_set_hash_magic(get_best_hash(50*10000));
+	m_word_hash->sh_set_hash_magic(get_best_hash(800*10000));
 	m_word_hash->sh_init(10*10000, sizeof(struct wfi_tmp_key), 0);
 
 	if (ff->word_file[0]) {

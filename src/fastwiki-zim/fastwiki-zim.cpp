@@ -624,10 +624,10 @@ int fz_test(const char *file)
 }
 #endif
 
-int usage(const char *name)
+void usage(const char *name)
 {
-	printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
-	printf("Author: qianshanhai\n"); 
+	print_usage_head();
+
 	printf("usage: fastwiki-zim <-l lang> <-d date> <-f zim_file> [-t max_total] [-a] [-i] [-m] [-z]\n");
 	printf( "       -l   language string. 'en', 'en_simple', etc.\n"
 			"       -d   date\n"
@@ -658,7 +658,7 @@ int usage(const char *name)
 
 		  );
 
-	exit(0);
+	print_usage_tail();
 }
 
 int fz_init_option(int argc, char **argv)

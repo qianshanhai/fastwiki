@@ -41,7 +41,8 @@ void usage(const char *name)
 			"       -t file type, such as .jpg, use ',' to split more type.\n"
 			"          for example: .git,.jpg  etc.\n"
 			".\n");
-	exit(0);
+
+	print_usage_tail();
 }
 
 int fi_init_option(int argc, char *argv[])
@@ -49,7 +50,7 @@ int fi_init_option(int argc, char *argv[])
 	int opt;
 	struct fi_option *p = m_option;
 
-	memset(p, 0, sizeof(p));
+	memset(p, 0, sizeof(*p));
 
 	while ((opt = getopt(argc, argv, "d:l:r:t:")) != -1) {
 		switch (opt) {

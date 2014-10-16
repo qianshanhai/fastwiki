@@ -26,6 +26,24 @@ typedef int (*compress_func_t)(char *out, int out_len, const char *in, int in_le
 		printf("Website: %s\n", _WEBSITE); \
 	} while (0)
 
+#ifdef WIN32
+#define print_usage_tail() \
+	do { \
+		char buf[128]; \
+		printf("This is a command line software, you must open a terminal to run it:\n" \
+				"1. Press Start Menu, then\n" \
+				"2. Click Run\n" \
+				"3. Input 'cmd' \n" \
+				"4. Press Enter \n" \
+				"You will get a terminal.\n"); \
+		fflush(stdout); \
+		fread(buf, 1, 1, stdin); \
+		exit(0); \
+	} while (0)
+#else
+#define print_usage_tail() exit(0)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

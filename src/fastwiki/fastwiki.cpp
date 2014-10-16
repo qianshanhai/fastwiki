@@ -257,10 +257,10 @@ int start_convert()
 	return 0;
 }
 
-int usage(const char *name)
+void usage(const char *name)
 {
-	printf("Version: %s, %s %s\n", _VERSION, __DATE__, __TIME__);
-	printf("Author: Qianshanhai\n");
+	print_usage_head();
+
 	printf("usage: fastwiki <-l lang> <-d date> <-f file> [-z] [-c creator] [-s size] \n");
 	printf( "       -l language string, used to distinguish other data files.\n"
 			"       -d date, such as 201312 \n"
@@ -273,9 +273,7 @@ int usage(const char *name)
 			".\n"
 		  );
 
-	exit(0);
-
-	return 0;
+	print_usage_tail();
 }
 
 int fw_init_option(int argc, char **argv)
