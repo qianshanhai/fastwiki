@@ -23,7 +23,7 @@ void usage(const char *name)
 			"       -m max total. this is debug option, just output article total for -m \n"
 			".\n");
 
-	exit(0);
+	print_usage_tail();
 }
 
 #define getopt_str(x, buf) \
@@ -59,7 +59,7 @@ static int init_option(struct fw_stardict_st *st, int argc, char **argv)
 	if (st->compress[0] == 0)
 		strcpy(st->compress, "gzip");
 
-	if (!dashf(st->script_file)) {
+	if (st->script_file[0] && !dashf(st->script_file)) {
 		printf("Not found %s\n", st->script_file);
 		usage(argv[0]);
 	}

@@ -13,6 +13,7 @@ struct fw_stardict_st {
 	char compress[128];
 	int script_flag;
 	int max_total;
+	char *buf;
 };
 
 extern "C" {
