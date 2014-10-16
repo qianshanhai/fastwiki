@@ -75,6 +75,7 @@ class WikiImage {
 		int we_new_file();
 		int we_add_done();
 		int we_write_hash();
+		int we_redo_hash();
 		char *we_get_file_name(char *file, int file_idx);
 
 		int we_init(const char *lang, const char *date);

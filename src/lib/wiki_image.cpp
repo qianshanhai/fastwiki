@@ -289,6 +289,32 @@ int WikiImage::we_add_done()
 	return 0;
 }
 
+int WikiImage::we_redo_hash()
+{
+	int total;
+	struct wiki_image_key key;
+	struct wiki_image_value value;
+
+	total = m_hash->sh_hash_total();
+	if (total > 2*10000)
+		return 0;
+
+	SHash *tmp = new SHash();
+
+	tmp->sh_set_hash_magic(get_max_prime(total + 1024));
+	tmp->sh_init(total + 1, sizeof(struct wiki_image_key), sizeof(struct wiki_image_value));
+	
+	m_hash->sh_reset();
+	while (m_hash->sh_read_next(&key, (void *)&value) == _SHASH_FOUND) {
+		tmp->sh_add(&key, &value);
+	}
+
+	delete m_hash;
+	m_hash = tmp;
+
+	return 0;
+}
+
 int WikiImage::we_write_hash()
 {
 	char file[128];
@@ -303,6 +329,8 @@ int WikiImage::we_write_hash()
 	}
 
 	read(fd, &m_head, sizeof(m_head));
+
+	we_redo_hash();
 
 	m_hash->sh_get_addr(&addr, &size);
 	m_head.hash_size = size;
