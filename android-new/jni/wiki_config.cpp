@@ -181,8 +181,9 @@ int WikiConfig::wc_scan_all()
 	m_config->dir_total = m_scan_file->wsf_fetch_fw_dir(m_config->base_dir, sizeof(m_config->base_dir) / sizeof(fw_dir_t), dir, 2);
 	wc_init_lang();
 
-	if (m_file_total > 0)
+	if (m_file_total > 0) {
 		wc_set_translate_default(m_file[0].lang);
+	}
 
 	return 0;
 }
@@ -291,6 +292,7 @@ int WikiConfig::wc_init_color()
 	if (m_config->color_total == 0) {
 		wc_add_color(m_color[2], m_color[0], m_color[3], m_color[2], m_color[0]);
 		wc_add_color(m_color[0], m_color[1], m_color[4], m_color[0], m_color[4]);
+		m_config->color_index = 0;
 	}
 
 	return 0;
@@ -311,9 +313,9 @@ int WikiConfig::wc_set_color_mode(int idx)
 int WikiConfig::wc_get_config(char bg[16], char fg[16], char link[16], int *font_size)
 {
 	if (m_config == NULL) {
-		strcpy(bg, m_color[2]);
-		strcpy(fg, m_color[0]);
-		strcpy(link, m_color[3]);
+		strncpy(bg, m_color[2], 15);
+		strncpy(fg, m_color[0], 15);
+		strncpy(link, m_color[3], 15);
 		*font_size = 13;
 
 		return 0;
@@ -321,9 +323,9 @@ int WikiConfig::wc_get_config(char bg[16], char fg[16], char link[16], int *font
 
 	color_t *p = &m_config->color[m_config->color_index];
 
-	strcpy(bg, p->bg);
-	strcpy(fg, p->fg);
-	strcpy(link, p->link);
+	strncpy(bg, p->bg, 15);
+	strncpy(fg, p->fg, 15);
+	strncpy(link, p->link, 15);
 
 	*font_size = m_config->font_size;
 
@@ -508,3 +510,29 @@ int WikiConfig::wc_set_full_text_show(int idx)
 
 	return idx;
 }
+
+int WikiConfig::wc_set_audio_flag(int flag)
+{
+	m_config->audio_flag = flag;
+
+	return 0;
+}
+
+int WikiConfig::wc_get_audio_flag()
+{
+	return m_config->audio_flag;
+}
+
+const char *WikiConfig::wc_get_audio_path()
+{
+	return m_config->audio_path;
+}
+
+int WikiConfig::wc_set_audio_path(const char *path)
+{
+	memset(m_config->audio_path, 0, sizeof(m_config->audio_path));
+	strncpy(m_config->audio_path, path, sizeof(m_config->audio_path) - 1);
+
+	return 0;
+}
+

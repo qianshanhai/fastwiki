@@ -4,6 +4,7 @@
 package com.hace.fastwiki;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.lang.reflect.Method;
 import android.util.Log;
 
@@ -88,6 +89,8 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.Html;
 import android.graphics.Color; 
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.app.ActionBar;
@@ -95,6 +98,8 @@ import com.actionbarsherlock.view.ActionMode;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.SubMenu;
 import com.actionbarsherlock.view.MenuItem;
+
+import android.util.Log;
 
 public class FastWiki extends SherlockFragmentActivity {
 	WebView my_view;  
@@ -171,6 +176,8 @@ public class FastWiki extends SherlockFragmentActivity {
 	private Menu m_menu = null;
 	int add_fav_flag = 0;
 
+	FileDescriptor m_audio_fd = null;
+	MediaPlayer m_play = null;
 	/*
 	private Handler m_handler;
 	private Thread m_thread;
@@ -248,6 +255,11 @@ public class FastWiki extends SherlockFragmentActivity {
 
 			public boolean shouldOverrideUrlLoading(WebView view, String url) {
 				imm.hideSoftInputFromWindow(myUrl.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+				String [] x = url.split(":");
+				if (x[0].equals("au")) {
+					audio_play(x[1]);
+					return true;
+				}
 
 				//websettings.setJavaScriptEnabled(false); 
 
@@ -304,6 +316,48 @@ public class FastWiki extends SherlockFragmentActivity {
 
 		full_screen_flag = WikiGetFullScreenFlag();
 		init_full_screen();
+
+		audio_init();
+	}
+
+	public void audio_reinit()
+	{
+		AudioReinit();
+		m_audio_fd = SoundFD();
+	}
+
+	public void audio_init()
+	{
+		m_audio_fd = SoundFD();
+		m_play = new MediaPlayer();
+		m_play.setOnCompletionListener(new OnCompletionListener(){
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+				mp.reset();
+			}
+		});
+	}
+
+	public void audio_play(String t)
+	{
+		int id;
+		String [] x = AudioFind(t);
+
+		if (m_audio_fd == null || m_play == null) {
+			return;
+		}
+
+		if (x[0].equals("0")) {
+			try {
+				m_play.setDataSource(m_audio_fd, Long.parseLong(x[1]), Long.parseLong(x[2]));
+				m_play.prepare();
+				m_play.start();
+			} catch (Exception e) {
+				//Log.e(TAG, "error: " + e.getMessage(), e);
+			}
+			return;
+		}
+		show_short_msg("No audio for " + t);
 	}
 
 	public void set_title(String title)
@@ -731,6 +785,7 @@ public class FastWiki extends SherlockFragmentActivity {
 
 		if (requestCode == 0) {
 			switch_full_screen();
+			audio_reinit();
 			return;
 		}
 
@@ -887,6 +942,10 @@ public class FastWiki extends SherlockFragmentActivity {
 
 	public native String WikiViewFavorite(int pos);
 	public native String TransLate(String str);
+	public native FileDescriptor SoundFD();
+	public native String [] AudioFind(String title);
+
+	public native int AudioReinit();
 
 	static {
 		System.loadLibrary("fastwiki");

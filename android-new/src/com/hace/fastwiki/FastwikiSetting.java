@@ -63,6 +63,7 @@ public class FastwikiSetting extends SherlockActivity {
 	private ViewGroup customViewForDictView;
 	TextView m_head_text = null;
 	TextView m_body_image_path = null;
+	TextView m_audio_path = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -209,10 +210,50 @@ public class FastwikiSetting extends SherlockActivity {
 		});
 
 		translate_line();
+
 		set_body_image();
 		set_full_text();
+		set_audio_flag();
 
 		init_full_screen();
+	}
+
+	private void set_audio_flag()
+	{
+		TextView audio_text = (TextView)findViewById(R.id.need_audio_txt);
+		audio_text.setText(Html.fromHtml(N("FW_AUDIO_ENBALE_TXT")));
+
+		CheckBox box = (CheckBox)findViewById(R.id.need_audio_box);
+		box.setChecked(GetNeedAudio() == 0 ? false : true);
+
+		box.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){ 
+			@Override 
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) { 
+				SetNeedAudio(isChecked ? 1 : 0);
+			}
+		});
+
+		TextView select_audio_text = (TextView)findViewById(R.id.select_audio_text);
+		select_audio_text.setText(N("FW_AUDIO_SELECT_FILE"));
+
+		Button button = (Button)findViewById(R.id.select_audio_file);
+		button.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View v) {
+				/* "1" for fastwiki.audio file */
+				startIntentForClass(201, FileBrowse.class, "1", N("FW_AUDIO_SELECT_TITLE"));
+			}
+		});
+
+		m_audio_path = (TextView)findViewById(R.id.audio_path);
+
+		show_audio_path();
+	}
+
+	private void show_audio_path()
+	{
+		String m = GetAudioPath();
+
+		m_audio_path.setText(m);
 	}
 
 	private void set_full_text()
@@ -246,11 +287,7 @@ public class FastwikiSetting extends SherlockActivity {
 		m_body_image_box.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){ 
 			@Override 
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) { 
-				if (isChecked) {
-					SetBodyImageFlag(1);
-				} else {
-					SetBodyImageFlag(0);
-				}
+				SetBodyImageFlag(isChecked ? 1 : 0);
 			}
 		});
 
@@ -260,7 +297,8 @@ public class FastwikiSetting extends SherlockActivity {
 		Button m_body_button = (Button)findViewById(R.id.select_body_image);
 		m_body_button.setOnClickListener(new Button.OnClickListener() {
 			public void onClick(View v) {
-				startIntentForClass(200, FileBrowse.class);
+				// "0" for image file
+				startIntentForClass(200, FileBrowse.class, "0", N("FW_FB_BODY_IMAGE"));
 			}
 		});
 
@@ -354,10 +392,16 @@ public class FastwikiSetting extends SherlockActivity {
 		toast.show();
 	}
 
-	protected void startIntentForClass(int requestCode, java.lang.Class<?> cls){
+	protected void startIntentForClass(int requestCode, java.lang.Class<?> cls, String flag, String title){
 		Intent intent = new Intent();
 		intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		intent.setClass(this, cls);
+
+		Bundle bundle = new Bundle();
+		bundle.putString("flag", flag);
+		bundle.putString("title", title);
+		intent.putExtras(bundle);
+
 		startActivityForResult(intent, requestCode);
 	}
 
@@ -376,10 +420,18 @@ public class FastwikiSetting extends SherlockActivity {
 			return;
 
 		if (requestCode == 200) {
-			String path = bundle.getString("body_path");
+			String path = bundle.getString("path");
 			if (!path.equals("")) {
 				SetBodyImagePath(path);
 				show_body_image_path();
+			}
+		}
+
+		if (requestCode == 201) {
+			String path = bundle.getString("path");
+			if (!path.equals("")) {
+				SetAudioPath(path);
+				show_audio_path();
 			}
 		}
 	}
@@ -418,4 +470,10 @@ public class FastwikiSetting extends SherlockActivity {
 
 	public native int GetFullTextShow();
 	public native int SetFullTextShow(int idx);
+
+	public native int GetNeedAudio();
+	public native int SetNeedAudio(int flag);
+
+	public native String GetAudioPath();
+	public native int SetAudioPath(String m);
 }

@@ -793,6 +793,19 @@ Java_com_hace_fastwiki_FastwikiSetting_SetFullTextShow(JNIEnv* env, jobject thiz
 }
 
 jint
+Java_com_hace_fastwiki_FastwikiSetting_GetNeedAudio(JNIEnv* env, jobject thiz)
+{
+	return m_wiki_config->wc_get_audio_flag();
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetNeedAudio(JNIEnv* env, jobject thiz, jint flag)
+{
+	return m_wiki_config->wc_set_audio_flag(flag);
+}
+
+
+jint
 Java_com_hace_fastwiki_FastwikiSetting_GetNeedTranslate(JNIEnv* env, jobject thiz)
 {
 	return m_wiki_config->wc_get_need_translate();
@@ -850,6 +863,24 @@ Java_com_hace_fastwiki_FastwikiSetting_GetBodyImagePath(JNIEnv* env, jobject thi
 	return env->NewStringUTF(m_wiki_config->wc_get_body_image_path());
 }
 
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetAudioPath(JNIEnv* env, jobject thiz, jstring path)
+{
+	return m_wiki_config->wc_set_audio_path(my_get_string(path));
+}
+
+jstring
+Java_com_hace_fastwiki_FastwikiSetting_GetAudioPath(JNIEnv* env, jobject thiz)
+{
+	return env->NewStringUTF(m_wiki_config->wc_get_audio_path());
+}
+
+jint
+Java_com_hace_fastwiki_FileBrowse_AudioCheckFile(JNIEnv* env, jobject thiz, jstring path)
+{
+	return m_wiki_manage->wiki_audio_check_file(my_get_string(path));
+}
+
 int _cmp_file_name(const void *a, const void *b)
 {
 	const char *pa = (const char *)a;
@@ -881,6 +912,13 @@ Java_com_hace_fastwiki_FileBrowse_RealPath(JNIEnv* env, jobject thiz, jstring pa
 	return env->NewStringUTF(buf);
 }
 
+#define FW_AUDIO_PREFIX "fastwiki.audio."
+
+int is_fastwiki_audio(const char *fname)
+{
+	return strncasecmp(fname, FW_AUDIO_PREFIX, sizeof(FW_AUDIO_PREFIX) - 1) == 0 ? 1 : 0;
+}
+
 int is_image_fname(const char *fname)
 {
 	int len;
@@ -906,51 +944,145 @@ int is_image_fname(const char *fname)
 	return 0;
 }
 
-#define _MAX_IMAGE_TOTAL 250
+#define _MAX_FILE_TOTAL 250
+#define _MAX_FILE_SIZE 128
 
+typedef struct {
+	char path[_MAX_FILE_TOTAL][_MAX_FILE_SIZE];
+	int total;
+} path_t;
+/*
+ * flag:
+ *   0 is_image_fname
+ *   1 is_fastwiki_audio
+ */
 jobjectArray
-Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring path)
+Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring path, jstring flag)
 {
-	int total = 0;
-	char buf[_MAX_IMAGE_TOTAL][64], tmp[128];
+	int idx_flag = 0;
+	char tmp[_MAX_FILE_SIZE];
 	jobjectArray ret;
+	path_t *buf;
 
 	const char *file = my_get_string(path);
+	typedef int (*func_t)(const char *fname);
+	
+	func_t func[2] = {
+		is_image_fname,
+		is_fastwiki_audio,
+	};
 
 	DIR *dirp;
 	struct dirent *d;
 
+	buf = (path_t *)malloc(sizeof(path_t));
+	memset(buf, 0, sizeof(path_t));
+
+	idx_flag = atoi(my_get_string(flag));
+	if (!(idx_flag >= 0 && idx_flag <= 1))
+		idx_flag = 0;
+
 	if ((dirp = opendir(file)) == NULL)
 		dirp = opendir("/");
 
-	sprintf(buf[total++], "1..");
+	sprintf(buf->path[buf->total++], "1..");
 
 	while ((d = readdir(dirp))) {
 		if (d->d_name[0] == '.')
 			continue;
 
-		if (total >= _MAX_IMAGE_TOTAL - 1)
+		if (buf->total >= _MAX_FILE_TOTAL - 1)
 			break;
 
 		snprintf(tmp, sizeof(tmp), "%s/%s", file, d->d_name);
 		
 		if (dashf(tmp) && access(tmp, R_OK) == 0) {
-			if (is_image_fname(d->d_name))
-				snprintf(buf[total++], sizeof(buf[0]), "0%s", d->d_name);
+			if ((*func[idx_flag])(d->d_name))
+				snprintf(buf->path[buf->total++], _MAX_FILE_SIZE, "0%s", d->d_name);
 		} else if (dashd(tmp) && access(tmp, R_OK | X_OK) == 0) {
-			snprintf(buf[total++], sizeof(buf[0]), "1%s", d->d_name);
+			snprintf(buf->path[buf->total++], _MAX_FILE_SIZE, "1%s", d->d_name);
 		}
 	}
 
 	closedir(dirp);
 
-	qsort(buf, total, 64, _cmp_file_name);
+	qsort(buf->path, buf->total, _MAX_FILE_SIZE, _cmp_file_name);
 
-	ret = env->NewObjectArray(total, env->FindClass("java/lang/String"), 0);
+	ret = env->NewObjectArray(buf->total, env->FindClass("java/lang/String"), 0);
 
-	for (int i = 0; i < total; i++) {
-		env->SetObjectArrayElement(ret, i, env->NewStringUTF(buf[i]));
+	for (int i = 0; i < buf->total; i++) {
+		env->SetObjectArrayElement(ret, i, env->NewStringUTF(buf->path[i]));
 	}
+
+	free(buf);
+
+	return ret;
+}
+
+/*
+ * [ ret, pos, len ]
+ * ret = 0  found
+ *     = -1 not found
+ */
+jobjectArray
+Java_com_hace_fastwiki_FastWiki_AudioFind(JNIEnv* env, jobject thiz, jstring _title)
+{
+	int len;
+	unsigned int pos;
+	const char *title = my_get_string(_title);
+
+	char buf[3][20] = { "-1", "0", "0" };
+
+	if (m_wiki_manage->wiki_find_audio(title, &pos, &len) == 0) {
+		strcpy(buf[0], "0");
+		sprintf(buf[1], "%u", pos);
+		sprintf(buf[2], "%d", len);
+	}
+
+	jobjectArray args;
+	jstring str;
+
+	args = env->NewObjectArray(3, env->FindClass("java/lang/String"), 0);
+
+	for (int i = 0; i < 3; i++) {
+		str = env->NewStringUTF(buf[i]);
+		env->SetObjectArrayElement(args, i, str);
+	}
+
+	return args;
+}
+
+jint
+Java_com_hace_fastwiki_FastWiki_AudioReinit(JNIEnv *env, jobject thiz)
+{
+	return m_wiki_manage->wiki_audio_reinit();
+}
+
+jobject
+Java_com_hace_fastwiki_FastWiki_SoundFD(JNIEnv *env, jobject thiz)
+{
+	int fd;
+	jfieldID field_fd;
+	jmethodID const_fdesc;
+	jclass class_fdesc;
+	jobject ret;
+
+	if ((fd = m_wiki_manage->wiki_get_sound_fd()) == -1)
+		return NULL;
+
+	if ((class_fdesc = env->FindClass("java/io/FileDescriptor")) == NULL)
+		return NULL;
+
+
+	if ((const_fdesc = env->GetMethodID(class_fdesc, "<init>", "()V")) == NULL)
+		return NULL;
+
+	ret = env->NewObject(class_fdesc, const_fdesc);
+
+	if ((field_fd = env->GetFieldID(class_fdesc, "descriptor", "I")) == NULL)
+		return NULL;
+
+	env->SetIntField(ret, field_fd, fd);
 
 	return ret;
 }

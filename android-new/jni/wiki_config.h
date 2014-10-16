@@ -80,7 +80,9 @@ typedef struct {
 	int  select_lang_total;
 	char use_language[24];
 	int full_text_show;
-	char r[10*1024];
+	int audio_flag; 
+	char audio_path[256];
+	char r[10*1024 - 4 - 256];
 } fw_config_t;
 
 class WikiConfig {
@@ -160,6 +162,11 @@ class WikiConfig {
 		int wc_set_body_image_flag(int flag);
 		const char *wc_get_body_image_path();
 		int wc_set_body_image_path(const char *path);
+
+		int wc_set_audio_flag(int flag);
+		int wc_get_audio_flag();
+		const char *wc_get_audio_path();
+		int wc_set_audio_path(const char *path);
 
 	private:
 		int wc_init_config();

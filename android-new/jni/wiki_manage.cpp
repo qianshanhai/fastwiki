@@ -11,6 +11,8 @@
 #include "wiki_common.h"
 #include "wiki_local.h"
 
+#include "audio_button.h"
+
 #define INIT_CURR_TITLE()   m_curr_title[0] = 0
 #define SET_CURR_TITLE(key) strcpy(m_curr_title, key)
 
@@ -52,6 +54,9 @@ static void *wiki_manage_start_socket_thread(void *arg)
 	return NULL;
 }
 
+#define _MAX_ONE_PAGE_SIZE (2*1024*1024)
+#define _MAX_MATH_SIZE (512*1024)
+
 int WikiManage::wiki_init()
 {
 
@@ -63,11 +68,11 @@ int WikiManage::wiki_init()
 	memset(&m_search_buf, 0, sizeof(m_search_buf));
 	m_search_buf.page_idx = (int *)calloc(MAX_PAGE_IDX_TOTAL, sizeof(int));
 
-	m_buf = (char *)malloc(2*1024*1024);
+	m_buf = (char *)malloc(_MAX_ONE_PAGE_SIZE + 1024);
 	m_trans_buf = (char *)malloc(MAX_TRANS_BUF_SIZE);
 
-	m_curr_content = (char *)malloc(2*1024*1024);
-	m_curr_page = (char *)malloc(2*1024*1024);
+	m_curr_content = (char *)malloc(_MAX_ONE_PAGE_SIZE + 1024);
+	m_curr_page = (char *)malloc(_MAX_ONE_PAGE_SIZE + 1024);
 
 	memset(&m_all_lang[0], 0, sizeof(struct one_lang));
 
@@ -75,7 +80,7 @@ int WikiManage::wiki_init()
 	memset(m_match_title, 0, (MAX_MATCH_TITLE_TOTAL + 1) * sizeof(wiki_title_t));
 
 	for (int i = 0; i < MAX_PTHREAD_TOTAL; i++) {
-		m_math_data[i] = (char *)malloc(512*1024);
+		m_math_data[i] = (char *)malloc(_MAX_MATH_SIZE + 1024);
 	}
 
 	m_wiki_config = new WikiConfig();
@@ -96,6 +101,9 @@ int WikiManage::wiki_init()
 	m_wiki_favorite->wf_init();
 	m_favorite = (struct tmp_favorite *)calloc(MAX_TMP_FAVORITE_TOTAL + 10, sizeof(struct tmp_favorite));
 
+	m_wiki_audio = new WikiAudio();
+	m_wiki_audio->wa_init(m_wiki_config->wc_get_audio_path());
+
 	INIT_CURR_LANG();
 
 	pthread_mutex_init(&m_mutex, NULL);
@@ -106,6 +114,17 @@ int WikiManage::wiki_init()
 	m_init_flag = 1;
 
 	return 0;
+}
+
+int WikiManage::wiki_audio_reinit()
+{
+	return m_wiki_audio->wa_reinit(m_wiki_config->wc_get_audio_path());
+
+}
+
+int WikiManage::wiki_audio_check_file(const char *file)
+{
+	return m_wiki_audio->wa_check_file(file);
 }
 
 int WikiManage::wiki_reinit()
@@ -296,6 +315,10 @@ int WikiManage::wiki_do_url(void *type, int sock, HttpParse *http, int idx)
 	WikiSocket *ws = (WikiSocket *)type;
 	const char *url = http->hp_url();
 
+#ifdef DEBUG
+	LOG("url:%s\n", url);
+#endif
+
 	if (strncasecmp(url, "curr:", 5) == 0) {
 		struct content_split *p = &m_split_pos[atoi(url + 5) + 1];
 #if 0
@@ -375,6 +398,12 @@ int WikiManage::wiki_do_url(void *type, int sock, HttpParse *http, int idx)
 		} else 
 			ws->ws_http_output_head(sock, 404, "image/png", 0);
 
+		return 0;
+	}
+
+	if (strcmp(url, "sound.png") == 0) {
+		ws->ws_http_output_head(sock, 200, "image/png", sizeof(_FW_AUDIO_PNG) - 1);
+		ws->ws_http_output_body(sock, _FW_AUDIO_PNG, sizeof(_FW_AUDIO_PNG) - 1);
 		return 0;
 	}
 
@@ -574,6 +603,36 @@ int WikiManage::wiki_translate_format(const char *buf, int len, char *to)
 	return pos;
 }
 
+int wiki_parse_audio_flag(const char *from, int len, char *to)
+{
+	int pos = 0;
+	const char *p;
+	char word[128];
+
+	for (int i = 0; i < len; i++) {
+		if (from[i] == '[') {
+			if (strncasecmp(from + i + 1, "audio|", 6) != 0)
+				goto out;
+			if ((p = strchr(from + i + 7, ']'))) {
+				int tmp = p - (from + i + 7);
+				if (tmp > (int)sizeof(word) - 1)
+					goto out;
+				memcpy(word, from + i + 7, tmp);
+				word[tmp] = 0;
+				pos += sprintf(to + pos, "<a href='au:%s'><img src='sound.png'/></a>", word);
+				i += 7 + tmp;
+				continue;
+			}
+		}
+out:
+		to[pos++] = from[i];
+	}
+
+	to[pos] = 0;
+
+	return pos;
+}
+
 int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *title)
 {
 	char tmp[256];
@@ -595,6 +654,12 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 #endif
 
 		m_curr_content[n] = 0;
+
+		if (m_wiki_config->wc_get_audio_flag()) {
+			n = wiki_parse_audio_flag(m_curr_content, n, m_curr_page);
+			memcpy(m_curr_content, m_curr_page, n);
+			m_curr_content[n] = 0;
+		}
 
 		if (m_wiki_config->wc_get_need_translate()) {
 			n = wiki_translate_format(m_curr_content, n, m_curr_page);
@@ -620,7 +685,7 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 
 		m_wiki_config->wc_get_config(bg, fg, link, &font_size);
 
-		sprintf(bg_str, "background:%s;\n", bg);
+		snprintf(bg_str, sizeof(bg_str), "background:%s;\n", bg);
 
 		/* TODO WIKI_START_HTML */
 		len = sprintf(m_curr_page, WIKI_START_HTML,
@@ -642,7 +707,7 @@ int WikiManage::wiki_read_data(const sort_idx_t *p, char **buf, const char *titl
 	return 0;
 }
 
-int WikiManage::wiki_not_found(char **buf, int *size, const char *str)
+int WikiManage::wiki_not_found(char **buf, int *size, const char *str, int str_len)
 {
 	char bg[16], fg[16], link[16], bg_str[64];
 	int font_size;
@@ -656,7 +721,14 @@ int WikiManage::wiki_not_found(char **buf, int *size, const char *str)
 			m_wiki_socket->ws_get_bind_port(), 0, 0, 1,
 			m_wiki_config->wc_get_body_image_flag() ? " background=\"B.body.png\"" : "");
 
-	len += sprintf(m_buf + len, "%s%s", str, WIKI_HTTP_END_HTML);
+	if (str_len > 0) {
+		memcpy(m_buf + len, str, str_len);
+		len += str_len;
+	} else {
+		len += sprintf(m_buf + len, "%s", str);
+	}
+
+	len += sprintf(m_buf + len, "%s", WIKI_HTTP_END_HTML);
 
 	m_buf[len] = 0;
 
@@ -1744,13 +1816,25 @@ int WikiManage::wiki_full_search_one_page(char **buf, int *size, int page)
 
 		if (show_flag == FULL_TEXT_SHOW_SOME || show_flag == FULL_TEXT_SHOW_ALL) {
 			if ((len = p->data->wd_sys_read(idx.data_file_idx, idx.data_pos, idx.data_len,
-							m_curr_content, 2*1024*1024)) > 0) {
+							m_curr_content, _MAX_ONE_PAGE_SIZE)) > 0) {
 				m_curr_content[len] = 0;
 
 				if (show_flag == FULL_TEXT_SHOW_SOME)
 					len = convert_page_complex(m_buf, m_curr_content, len, fs->key);
-				else
+				else {
+					if (m_wiki_config->wc_get_audio_flag()) {
+						len = wiki_parse_audio_flag(m_curr_content, len, m_buf);
+						memcpy(m_curr_content, m_buf, len);
+						m_curr_content[len] = 0;
+					}
+
+					if (m_wiki_config->wc_get_need_translate()) {
+						len = wiki_translate_format(m_curr_content, len, m_buf);
+						memcpy(m_curr_content, m_buf, len);
+						m_curr_content[len] = 0;
+					}
 					len = convert_page_simple(m_buf, m_curr_content, len, fs->key);
+				}
 				memcpy(m_curr_page + pos, m_buf, len);
 				pos += len;
 			}
@@ -1776,7 +1860,7 @@ int WikiManage::wiki_full_search_one_page(char **buf, int *size, int page)
 
 	m_curr_page[pos] = 0;
 
-	return wiki_not_found(buf, size, m_curr_page);
+	return wiki_not_found(buf, size, m_curr_page, pos);
 }
 
 struct one_lang *WikiManage::wiki_full_search_find_lang(int idx)
@@ -1794,7 +1878,17 @@ struct one_lang *WikiManage::wiki_full_search_find_lang(int idx)
 
 int WikiManage::wiki_check_full_search(const char *key)
 {
-	if (strcmp(m_search_buf.key, key) == 0)
+	full_search_t *fs  = &m_search_buf;
+
+	if (fs->lang_total != m_select_lang_total)
+		return 0;
+
+	for (int i = 0; i < fs->lang_total; i++) {
+		if (strcmp(fs->select_lang[i], m_select_lang[i]) != 0)
+			return 0;
+	}
+
+	if (strcmp(fs->key, key) == 0)
 		return 1;
 
 	return 0;
@@ -1816,6 +1910,9 @@ int WikiManage::wiki_init_all_lang()
 int WikiManage::wiki_full_search_update(const char *key)
 {
 	full_search_t *fs  = &m_search_buf;
+
+	fs->lang_total = m_select_lang_total;
+	memcpy(fs->select_lang, m_select_lang, sizeof(fs->select_lang));
 
 	strncpy(fs->key, key, sizeof(fs->key) - 1);
 	fs->page_total = 0;
@@ -1862,8 +1959,21 @@ int WikiManage::wiki_parse_url_full_search(const char *url, char *flag, char *ti
 	sort_idx_t idx;
 
 	if (p->index->wi_find(NULL, WK_INDEX_FIND, fs->page_idx[i], &idx, &len) == 0) {
-		if ((len = p->data->wd_sys_read(idx.data_file_idx, idx.data_pos, idx.data_len, m_curr_content, 2*1024*1024)) > 0) {
+		if ((len = p->data->wd_sys_read(idx.data_file_idx,
+							idx.data_pos, idx.data_len, m_curr_content, _MAX_ONE_PAGE_SIZE)) > 0) {
 			m_curr_content[len] = 0;
+
+			if (m_wiki_config->wc_get_audio_flag()) {
+				len = wiki_parse_audio_flag(m_curr_content, len, m_curr_page);
+				memcpy(m_curr_content, m_curr_page, len);
+				m_curr_content[len] = 0;
+			}
+
+			if (m_wiki_config->wc_get_need_translate()) {
+				len = wiki_translate_format(m_curr_content, len, m_curr_page);
+				memcpy(m_curr_content, m_curr_page, len);
+				m_curr_content[len] = 0;
+			}
 
 			int size = convert_page_simple(m_curr_page, m_curr_content, len, fs->key);
 			m_curr_page[size] = 0;
@@ -1874,9 +1984,19 @@ int WikiManage::wiki_parse_url_full_search(const char *url, char *flag, char *ti
 			m_curr_lang = p;
 			wiki_push_back(STATUS_CONTENT, tmp, len, &idx);
 
-			return wiki_not_found(data, &size, m_curr_page);
+			return wiki_not_found(data, &size, m_curr_page, size);
 		}
 	}
 
 	return wiki_not_found(data, &size, "Not Found.");
+}
+
+int WikiManage::wiki_find_audio(const char *title, unsigned int *pos, int *len)
+{
+	return m_wiki_audio->wa_find_pos(title, pos, len);
+}
+
+int WikiManage::wiki_get_sound_fd()
+{
+	return m_wiki_audio->wa_get_fd();
 }

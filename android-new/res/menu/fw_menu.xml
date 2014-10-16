@@ -4,7 +4,7 @@
 	<item  
 		android:id="@+id/ic_view"  
 		android:icon="@drawable/ic_view"
-		android:showAsAction="never"  
+		android:showAsAction="always"  
 		android:title="view_option"> 
 		<menu>
 			<item  
@@ -53,25 +53,24 @@
 	<item
 		android:id="@+id/library"
 		android:icon="@drawable/ic_library"
-		android:showAsAction="never"  
+		android:showAsAction="always"
 		android:title="Dictionary"> 
 	</item>
 	<item  
 		android:id="@+id/favorites"  
 		android:icon="@drawable/ic_favorites"  
-		android:showAsAction="never"  
+		android:showAsAction="always"  
 		android:title="favorite">
 	</item>  
 
 	<item  
 		android:id="@+id/history"  
 		android:icon="@drawable/ic_history"  
-		android:showAsAction="never"  
+		android:showAsAction="always"  
 		android:title="history">
 	</item>  
 	<item  
 		android:id="@+id/setting"  
-		android:icon="@drawable/ic_setting"
 		android:showAsAction="never"  
 		android:title="setting">
 	</item>  

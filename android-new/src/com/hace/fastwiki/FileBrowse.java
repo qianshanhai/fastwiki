@@ -58,6 +58,7 @@ public class FileBrowse extends SherlockActivity {
 	private TextView m_last_text = null;
 	private int m_idx = -1;
 	String m_curr_path = "/mnt/sdcard";
+	String m_file_flag = "";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -74,12 +75,16 @@ public class FileBrowse extends SherlockActivity {
 		customViewForDictView = (ViewGroup) getLayoutInflater().inflate(R.layout.file_browse_bar, null);
 		ab.setCustomView(customViewForDictView);
 
+		Intent intent = getIntent();
+		Bundle bundle = intent.getExtras();
+		m_file_flag = bundle.getString("flag");
+
 		m_text = (TextView)customViewForDictView.findViewById(R.id.fb_text);
-		m_text.setText(N("FW_FB_BODY_IMAGE"));
+		m_text.setText(bundle.getString("title"));
 
 		m_list_view = (ListView)findViewById(R.id.file_browse_list);
 
-		m_files = GetFiles(m_curr_path);
+		m_files = GetFiles(m_curr_path, m_file_flag);
 		view_file_browse();
 	}
 
@@ -87,7 +92,7 @@ public class FileBrowse extends SherlockActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getSupportMenuInflater().inflate(R.menu.file_browse, menu);
 
-		menu.findItem(R.id.fb_menu_ok).setTitle(N("FW_FB_OK"));
+		menu.findItem(R.id.fb_menu_ok).setTitle(N("FW_FILE_SELECT_OK"));
 
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -96,7 +101,7 @@ public class FileBrowse extends SherlockActivity {
 	{
 		Intent data = new Intent(FileBrowse.this, Activity.class);  
 		Bundle bundle = new Bundle();  
-		bundle.putString("body_path", m);
+		bundle.putString("path", m);
 		data.putExtras(bundle); 
 		setResult(200, data);  
 		finish();
@@ -108,15 +113,29 @@ public class FileBrowse extends SherlockActivity {
 			case R.id.fb_menu_ok:
 				if (m_last_text == null) {
 					AlertDialog.Builder alert = new AlertDialog.Builder(this);
-					alert.setMessage(N("FW_FB_SELECT_ONE"));
-					alert.setPositiveButton(N("FW_FB_OK"),
+					alert.setMessage(N("FW_FILE_SELECT_ONE"));
+					alert.setPositiveButton(N("FW_FILE_SELECT_OK"),
 							new DialogInterface.OnClickListener(){  
 								public void onClick(DialogInterface dialoginterface, int i) {
 								}
 							});
 					alert.show();
 				} else {
-					return_val(m_curr_path + "/" + m_last_text.getText().toString());
+					String m = m_curr_path + "/" + m_last_text.getText().toString();
+					if (m_file_flag.equals("1")) {
+						if (AudioCheckFile(m) == -1) {
+							AlertDialog.Builder alert = new AlertDialog.Builder(this);
+							alert.setMessage(N("FW_AUDIO_MAYBE_DAMAGE") + m);
+							alert.setPositiveButton(N("FW_FILE_SELECT_OK"),
+									new DialogInterface.OnClickListener(){  
+										public void onClick(DialogInterface dialoginterface, int i) {
+										}
+									});
+							alert.show();
+							return true;
+						}
+					}
+					return_val(m);
 				}
 				break;
 			default:
@@ -132,7 +151,7 @@ public class FileBrowse extends SherlockActivity {
 				return_val("");
 			else {
 				m_curr_path = RealPath(m_curr_path + "/..");
-				m_files = GetFiles(m_curr_path);
+				m_files = GetFiles(m_curr_path, m_file_flag);
 				m_adapter.notifyDataSetChanged();
 			}
 			return true;
@@ -159,8 +178,9 @@ public class FileBrowse extends SherlockActivity {
 				} else {
 					m_idx = -1;
 					m_curr_path = RealPath(m_curr_path + "/" + m);
-					m_files = GetFiles(m_curr_path);
+					m_files = GetFiles(m_curr_path, m_file_flag);
 					m_adapter.notifyDataSetChanged();
+					m_last_text = null;
 				}
 			}
 		});
@@ -224,6 +244,7 @@ public class FileBrowse extends SherlockActivity {
 		}
 
 	}
+
 	private class ViewHolder
 	{
 		ImageView img;
@@ -231,7 +252,8 @@ public class FileBrowse extends SherlockActivity {
 		int flag;
 	}
 
-	public native String [] GetFiles(String path);
+	public native String [] GetFiles(String path, String file_flag);
 	public native String N(String name);
 	public native String RealPath(String path);
+	public native int AudioCheckFile(String path);
 }

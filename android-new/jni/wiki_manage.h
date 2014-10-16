@@ -15,6 +15,7 @@
 #include "wiki_image.h"
 #include "wiki_full_index.h"
 #include "wiki_history.h"
+#include "wiki_audio.h"
 
 #define MAX_PTHREAD_TOTAL 5
 
@@ -78,6 +79,8 @@ typedef struct {
 	int all_total;
 	struct page_pos page_pos[MAX_SELECT_LANG_TOTAL];
 	int pos_total;
+	char select_lang[MAX_SELECT_LANG_TOTAL][24];
+	int lang_total;
 } full_search_t;
 
 #define MAX_MATCH_TITLE_TOTAL (MAX_FIND_RECORD * 10 + 1)
@@ -95,6 +98,7 @@ class WikiManage {
 		WikiConfig *m_wiki_config;
 		WikiFavorite *m_wiki_favorite;
 		WikiSocket *m_wiki_socket;
+		WikiAudio *m_wiki_audio;
 
 		pthread_mutex_t m_mutex;
 
@@ -130,7 +134,7 @@ class WikiManage {
 		char m_curr_match_key[256];
 
 		char m_curr_title[128];
-		char *m_buf; /* 32K */
+		char *m_buf;
 		int m_buf_len;
 
 		struct tmp_history *m_history;
@@ -191,7 +195,7 @@ class WikiManage {
 
 		int wiki_get_title_from_url(char idx[16][256], char title[16][256], const char *buf);
 		int wiki_view_index(int idx, char **buf, int *size);
-		int wiki_not_found(char **buf, int *size, const char *str);
+		int wiki_not_found(char **buf, int *size, const char *str, int str_len = 0);
 
 		int wiki_href(int href_idx, char **buf, int *size, const char *title);
 		int wiki_find_key(const char *key, char **buf, int *size);
@@ -245,6 +249,12 @@ class WikiManage {
 		int wiki_init_all_lang();
 		int wiki_full_search_update(const char *key);
 		int wiki_parse_url_full_search(const char *url, char *flag, char *title, char **data);
+
+		int wiki_find_audio(const char *title, unsigned int *pos, int *len);
+		int wiki_get_sound_fd();
+			
+		int wiki_audio_reinit();
+		int wiki_audio_check_file(const char *file);
 };
 
 #endif
