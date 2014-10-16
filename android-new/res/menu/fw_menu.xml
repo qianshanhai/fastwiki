@@ -48,6 +48,11 @@
 				android:icon="@drawable/ic_add_to_fav"
 				android:title="add_to_fav">  
 			</item>  
+			<item  
+				android:id="@+id/play_id"
+				android:icon="@drawable/ic_play_sound"
+				android:title="sound_title">  
+			</item>  
 		</menu>
 	</item>  
 	<item

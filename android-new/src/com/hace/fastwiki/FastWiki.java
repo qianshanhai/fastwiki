@@ -525,6 +525,8 @@ public class FastWiki extends SherlockFragmentActivity {
 		menu.findItem(R.id.night_mode).setTitle(N("FW_MENU_NIGHT_MODE"));
 		menu.findItem(R.id.add_to_fav).setTitle(N("FW_MENU_ADD_TO_FAV"));
 
+		menu.findItem(R.id.play_id).setTitle(N("FW_MENU_PLAY_SOUND"));
+
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -537,7 +539,8 @@ public class FastWiki extends SherlockFragmentActivity {
 					|| id == R.id.shuffle
 					|| id == R.id.display_top
 					|| id == R.id.add_to_fav
-					|| id == R.id.forward) {
+					|| id == R.id.forward
+					|| id == R.id.play_id) {
 				return false;
 			}
 		}
@@ -621,6 +624,13 @@ public class FastWiki extends SherlockFragmentActivity {
 				} else {
 					set_title(t[1]);
 					on_change();
+				}
+				break;
+
+			case R.id.play_id:
+				String m = WikiCurrTitle();
+				if (!m.equals("")) {
+					audio_play(m);
 				}
 				break;
 
