@@ -8,12 +8,6 @@
 
 #include "lua.hpp"
 
-extern "C" {
-	int page_content(lua_State *L);
-	int page_title(lua_State *L);
-	int find_title(lua_State *L);
-};
-
 typedef char *(*content_func_t)(int *len);
 typedef char *(*title_func_t)(int *len);
 typedef int (*find_title_func_t)(const char *title, int len);

@@ -20,7 +20,7 @@ inc = -DPTW32_STATIC_LIB
 libs = -static -L$(root)/lib -L$(libbase_lib) -static \
 	   -lfastwiki -lbase \
 	   -L/c/MinGW/lib -L/c/MinGW/mingw32/lib -lpthreadGC2 \
-	   -lws2_32 -lm -lbz2 -lz
+	   -lws2_32 -lm -liconv -lbz2 -lz
 # export MINGW_LIB=/c/MinGW/lib
 else
 libs = -lm -lbz2 -lz -lpthread -L$(root)/lib -lfastwiki -L$(libbase_lib) -lbase
