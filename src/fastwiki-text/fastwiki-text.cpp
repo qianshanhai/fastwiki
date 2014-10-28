@@ -186,6 +186,53 @@ int text_add_one_file_title(const char *file, int not_used)
 	return 0;
 }
 
+/*
+ * [[link|title]]  or [[link]]
+ */
+int text_find_link(const char *tmp, int n, char *out)
+{
+	char buf[1024];
+	const char  *p, *e;
+	int len, out_len = 0;
+
+	if ((p = strstr(tmp, "[[")) == NULL) 
+		return 0;
+
+	p += 2;
+
+	if ((e = strstr(p, "]]")) == NULL)
+		return 0;
+
+	len = e - p;
+
+	if (len >= (int)sizeof(buf))
+		return 0;
+
+	memcpy(buf, p, len);
+	buf[len] = 0;
+
+	int idx;
+	char *sp, *title = buf, *link = buf;
+
+	if ((sp = strchr(buf, '|'))) {
+		*sp++ = 0;
+		title = sp;
+	}
+
+	if ((idx = text_find_title(link, strlen(link))) < 0)
+		return 0;
+
+	memcpy(out, tmp, p - 2 - tmp);
+	out_len += p - 2 - tmp;
+
+	out_len += sprintf(out + out_len, "<a href='%d#%s'>%s</a>", idx, link, title);
+
+	memcpy(out + out_len, e + 2, tmp + n - (e + 2) + 1);
+	out_len += tmp + n - (e + 2) + 1;
+
+	return out_len;
+}
+
 int text_add_one_file_page(const char *file, int not_used)
 {
 	int n, page_len = 0, redirect_len = 0;;
@@ -195,7 +242,8 @@ int text_add_one_file_page(const char *file, int not_used)
 	file_io->fi_init(file);
 	page = (char *)malloc(5*1024*1024);
 
-	while ((n = file_io->fi_gets(tmp, sizeof(tmp))) > 0) {
+	while ((n = file_io->fi_gets(tmp, sizeof(tmp) - 1)) > 0) {
+		tmp[n] = 0;
 		if (is_title_flag(tmp)) {
 			if (page_len > 0 || redirect_len > 0) {
 				m_dict->dict_add_page(page, page_len, curr_title, strlen(curr_title), curr_redirect, redirect_len);
@@ -205,8 +253,13 @@ int text_add_one_file_page(const char *file, int not_used)
 			parse_title_redirect(tmp + 7, curr_title, curr_redirect);
 			redirect_len = strlen(curr_redirect);
 		} else {
-			memcpy(page + page_len, tmp, n);
-			page_len += n;
+			int t;
+			if ((t = text_find_link(tmp, n, page + page_len)) > 0) 
+				page_len += t;
+			else {
+				memcpy(page + page_len, tmp, n);
+				page_len += n;
+			}
 		}
 	}
 
