@@ -318,6 +318,39 @@ int text_add_one_content(const char *content, int len)
 				}
 			}
 		} else {
+			/* ugly */
+			if (content[i] == '[' && content[i + 1] == '[') {
+				int sp = 0, idx, found_end = 0;
+				for (int j = i + 2; j < len && j < 256; j++) {
+					if (content[j] == '|')
+						sp = j;
+					if (content[j] == ']' && content[j + 1] == ']') {
+						found_end = j;
+						break;
+					}
+				}
+
+				char link[256], title[256];
+
+				memset(link, 0, sizeof(link));
+				memset(title, 0, sizeof(title));
+
+				if (found_end) {
+					if (sp > 0) {
+						memcpy(link, content + i + 2, sp - (i + 2));
+						memcpy(title, content + sp + 1, found_end - (sp + 1));
+					} else {
+						memcpy(link, content + i + 2, found_end - (i + 2));
+						strcpy(title, link);
+					}
+					if ((idx = text_find_title(link, strlen(link))) >= 0) {
+						page_len += sprintf(page + page_len, "<a href='%d#%s'>%s</a>", idx, link, title);
+						i = found_end + 1;
+						continue;
+					}
+				}
+			}
+
 			page[page_len++] = content[i];
 		}
 	}
