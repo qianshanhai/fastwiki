@@ -3,7 +3,7 @@ include $(root)/rules.mk
 
 objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 
-program = fastwiki-stardict 
+program = fastwiki-stardict$(file_type)
 
 %.o:%.cpp
 	$(cpp) $(optinc) $(cppflag) $(inc) -o $@ -c $<
@@ -11,7 +11,7 @@ program = fastwiki-stardict
 
 all: $(program)
 
-fastwiki-stardict: fastwiki-stardict.o stardict.o
+fastwiki-stardict$(file_type): fastwiki-stardict.o stardict.o
 	$(cpp) -o $@ $^ $(libs) $(optlib)
 
 clean:

@@ -5,7 +5,7 @@ objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 
 libs += -llzma
 
-program = fastwiki-zim
+program = fastwiki-zim$(file_type)
 
 %.o:%.cpp
 	@$(cpp) $(cppflag) $(inc) -o $@ -c $<
@@ -13,7 +13,7 @@ program = fastwiki-zim
 
 all: $(program)
 
-fastwiki-zim: fastwiki-zim.o zim.o
+fastwiki-zim$(file_type): fastwiki-zim.o zim.o
 	$(cpp) -o $@ $^ $(libs)
 
 clean:

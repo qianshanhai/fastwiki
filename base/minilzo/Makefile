@@ -1,5 +1,13 @@
-cc = gcc
-ar = ar
+ifeq ($(LINUX_MINGW), 1)
+cpp_prefix=i686-w64-mingw32-
+endif
+
+ifeq ($(LINUX_MINGW_64), 1)
+cpp_prefix=x86_64-w64-mingw32-
+endif
+
+cc = $(cpp_prefix)gcc
+ar = $(cpp_prefix)ar
 arflag = rv
 cflag = -fPIC -Wall -fomit-frame-pointer
 

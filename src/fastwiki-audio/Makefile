@@ -3,7 +3,7 @@ include $(root)/rules.mk
 
 objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 
-program = fastwiki-audio find-audio
+program = fastwiki-audio$(file_type) find-audio
 
 %.o:%.cpp
 	@$(cpp) $(cppflag) $(inc) -o $@ -c $<
@@ -11,7 +11,7 @@ program = fastwiki-audio find-audio
 
 all: $(program)
 
-fastwiki-audio: fastwiki-audio.o
+fastwiki-audio$(file_type): fastwiki-audio.o
 	$(cpp) -o $@ $^ $(libs)
 
 find-audio: find-audio.o

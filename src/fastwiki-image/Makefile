@@ -3,7 +3,7 @@ include $(root)/rules.mk
 
 objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 
-program = fastwiki-image
+program = fastwiki-image$(file_type)
 
 %.o:%.cpp
 	@$(cpp) $(cppflag) $(inc) -o $@ -c $<
@@ -11,7 +11,7 @@ program = fastwiki-image
 
 all: $(program)
 
-fastwiki-image: fastwiki-image.o
+fastwiki-image$(file_type): fastwiki-image.o
 	$(cpp) -o $@ $^ $(libs)
 
 clean:

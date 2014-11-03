@@ -6,13 +6,21 @@
 # Your platform. See PLATS for possible values.
 PLAT= none
 
-CC= gcc
+ifeq ($(LINUX_MINGW), 1)
+cpp_prefix=i686-w64-mingw32-
+endif
+
+ifeq ($(LINUX_MINGW_64), 1)
+cpp_prefix=x86_64-w64-mingw32-
+endif
+
+CC= $(cpp_prefix)gcc
 CFLAGS= -O2 -Wall -DLUA_COMPAT_ALL $(SYSCFLAGS) $(MYCFLAGS)
 LDFLAGS= $(SYSLDFLAGS) $(MYLDFLAGS)
 LIBS= -lm $(SYSLIBS) $(MYLIBS)
 
-AR= ar rcu
-RANLIB= ranlib
+AR= $(cpp_prefix)ar rcu
+RANLIB=$(cpp_prefix)gcc-ranlib
 RM= rm -f
 
 SYSCFLAGS=

@@ -1,11 +1,19 @@
-
-ifeq ($(RELEASE), 1)
-cpp = g++ -O2 -Wall -s #-static
-else
-cpp = g++ -Wall -g -DDEBUG
+ifeq ($(LINUX_MINGW), 1)
+	cpp_prefix = i686-w64-mingw32-
+	file_type=.exe
+endif
+ifeq ($(LINUX_MINGW_64), 1)
+	cpp_prefix = x86_64-w64-mingw32-
+	file_type=.exe
 endif
 
-ar = ar
+ifeq ($(RELEASE), 1)
+cpp = $(cpp_prefix)g++ -O2 -Wall -s #-static
+else
+cpp = $(cpp_prefix)g++ -Wall -g -DDEBUG
+endif
+
+ar = $(cpp_prefix)ar
 arflag = rv
 
 system = $(shell uname -s | perl -ne 'chomp;print substr($$_, 0, 5)')
@@ -23,8 +31,15 @@ libs = -static -L$(root)/lib -L$(libbase_lib) -static \
 	   -lws2_32 -lm -liconv -lbz2 -lz
 # export MINGW_LIB=/c/MinGW/lib
 else
+ifeq ($(LINUX_MINGW), 1)
+inc = -DPTW32_STATIC_LIB -DWIN32 -D_WIN32
+libs = -static -L$(root)/lib -L$(libbase_lib) \
+	   -lfastwiki -lbase -lpthreadGC2 \
+		-lws2_32 -lm -liconv -lbz2 -lz 
+else
 libs = -lm -lbz2 -lz -lpthread -L$(root)/lib -lfastwiki -L$(libbase_lib) -lbase
 cppflag += -DO_BINARY=0
+endif
 endif
 
 inc += -I. -D_FASTWIKI_BIN_ -I$(root)/lib -I$(libbase_inc) -I$(root)/../base/lua/src

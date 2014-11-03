@@ -3,7 +3,7 @@ include $(root)/rules.mk
 
 objs = $(patsubst %.cpp,%.o, $(wildcard *.cpp))
 
-program = fastwiki-httpd
+program = fastwiki-httpd$(file_type)
 
 %.o:%.cpp
 	@$(cpp) $(cppflag) $(inc) -o $@ -c $<
@@ -11,7 +11,7 @@ program = fastwiki-httpd
 
 all: $(program)
 
-fastwiki-httpd: fastwiki-httpd.o httpd-index.o 
+fastwiki-httpd$(file_type): fastwiki-httpd.o httpd-index.o 
 	$(cpp) -o $@ $^ $(libs)
 
 clean:
