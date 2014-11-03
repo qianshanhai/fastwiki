@@ -186,52 +186,42 @@ int text_add_one_file_title(const char *file, int not_used)
 	return 0;
 }
 
-/*
- * [[link|title]]  or [[link]]
- */
-int text_find_link(const char *tmp, int n, char *out)
+int text_do_link(const char *content, int len, int *pos, char *page)
 {
-	char buf[1024];
-	const char  *p, *e;
-	int len, out_len = 0;
+	int sp = 0, idx, found_end = 0;
+	char link[256], title[256];
 
-	if ((p = strstr(tmp, "[[")) == NULL) 
-		return 0;
-
-	p += 2;
-
-	if ((e = strstr(p, "]]")) == NULL)
-		return 0;
-
-	len = e - p;
-
-	if (len >= (int)sizeof(buf))
-		return 0;
-
-	memcpy(buf, p, len);
-	buf[len] = 0;
-
-	int idx;
-	char *sp, *title = buf, *link = buf;
-
-	if ((sp = strchr(buf, '|'))) {
-		*sp++ = 0;
-		title = sp;
+	for (int i = 0; i < len && i < 256; i++) {
+		if (content[i] == '|')
+			sp = i;
+		if (content[i] == ']' && content[i + 1] == ']') {
+			found_end = i;
+			break;
+		}
 	}
 
-	if ((idx = text_find_title(link, strlen(link))) < 0)
+	if (found_end == 0)
 		return 0;
 
-	memcpy(out, tmp, p - 2 - tmp);
-	out_len += p - 2 - tmp;
+	memset(link, 0, sizeof(link));
+	memset(title, 0, sizeof(title));
 
-	out_len += sprintf(out + out_len, "<a href='%d#%s'>%s</a>", idx, link, title);
+	if (sp > 0) {
+		memcpy(link, content, sp);
+		memcpy(title, content + sp + 1, found_end - (sp + 1));
+	} else {
+		memcpy(link, content, found_end);
+		strcpy(title, link);
+	}
 
-	memcpy(out + out_len, e + 2, tmp + n - (e + 2) + 1);
-	out_len += tmp + n - (e + 2) + 1;
+	if ((idx = text_find_title(link, strlen(link))) >= 0) {
+		*pos = found_end + 1;
+		return sprintf(page, "<a href='%d#%s'>%s</a>", idx, link, title);
+	}
 
-	return out_len;
+	return 0;
 }
+
 
 int text_add_one_file_page(const char *file, int not_used)
 {
@@ -253,12 +243,17 @@ int text_add_one_file_page(const char *file, int not_used)
 			parse_title_redirect(tmp + 7, curr_title, curr_redirect);
 			redirect_len = strlen(curr_redirect);
 		} else {
-			int t;
-			if ((t = text_find_link(tmp, n, page + page_len)) > 0) 
-				page_len += t;
-			else {
-				memcpy(page + page_len, tmp, n);
-				page_len += n;
+			for (int i = 0; i < n; i++) {
+				if (tmp[i] == '[' && tmp[i + 1] == '[') {
+					int pos;
+					int t = text_do_link(tmp + i + 2, n - (i + 2), &pos, page + page_len);
+					if (t > 0) {
+						page_len += t;
+						i += 2 + pos;
+						continue;
+					}
+				}
+				page[page_len++] = tmp[i];
 			}
 		}
 	}
@@ -318,36 +313,13 @@ int text_add_one_content(const char *content, int len)
 				}
 			}
 		} else {
-			/* ugly */
 			if (content[i] == '[' && content[i + 1] == '[') {
-				int sp = 0, idx, found_end = 0;
-				for (int j = i + 2; j < len && j < 256; j++) {
-					if (content[j] == '|')
-						sp = j;
-					if (content[j] == ']' && content[j + 1] == ']') {
-						found_end = j;
-						break;
-					}
-				}
-
-				char link[256], title[256];
-
-				memset(link, 0, sizeof(link));
-				memset(title, 0, sizeof(title));
-
-				if (found_end) {
-					if (sp > 0) {
-						memcpy(link, content + i + 2, sp - (i + 2));
-						memcpy(title, content + sp + 1, found_end - (sp + 1));
-					} else {
-						memcpy(link, content + i + 2, found_end - (i + 2));
-						strcpy(title, link);
-					}
-					if ((idx = text_find_title(link, strlen(link))) >= 0) {
-						page_len += sprintf(page + page_len, "<a href='%d#%s'>%s</a>", idx, link, title);
-						i = found_end + 1;
-						continue;
-					}
+				int pos;
+				n = text_do_link(content + i + 2, len - (i + 2), &pos, page + page_len);
+				if (n > 0) {
+					page_len += n;
+					i += 2 + pos;
+					continue;
 				}
 			}
 
