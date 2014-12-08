@@ -73,10 +73,7 @@ Java_com_hace_fastwiki_FastWiki_ScanDataPath(JNIEnv* env, jobject thiz)
 {
 	int n;
 
-	LOG("test1\n");
-
 	n = m_wiki_manage->wiki_scan_data_path();
-	LOG("test2\n");
 
 	return n;
 }

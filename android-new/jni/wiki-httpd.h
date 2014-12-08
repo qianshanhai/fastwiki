@@ -218,7 +218,6 @@
 "	{\n" \
 "		var curr_top = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;\n" \
 "		if (curr_top != last_top) {\n" \
-"			android.debug(\"pos: \" + curr_top + \"\\n\");\n" \
 "			set_pos();\n" \
 "			last_top = curr_top;\n" \
 "		}\n" \

@@ -1747,16 +1747,9 @@ struct one_lang *WikiManage::wiki_get_lang_addr(const char *lang)
 
 int WikiManage::wiki_scan_data_path()
 {
-	LOG("0\n");
-
 	memset(m_search_buf.key, 0, sizeof(m_search_buf.key));
 
-	LOG("1\n");
-
 	m_wiki_config->wc_scan_all();
-
-	LOG("2\n");
-
 	wiki_lang_init();
 
 	if (m_select_lang_total > 0)

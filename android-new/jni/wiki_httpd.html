@@ -212,7 +212,6 @@ SPLIT
 	{
 		var curr_top = document.body.scrollTop || window.pageYOffset || document.documentElement.scrollTop;
 		if (curr_top != last_top) {
-			android.debug("pos: " + curr_top + "\n");
 			set_pos();
 			last_top = curr_top;
 		}
