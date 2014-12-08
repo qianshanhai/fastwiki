@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2014 Qian Shanhai (qianshanhai@gmail.com)
+ */
 #ifndef __SOOSUE_LOG_H
 #define __SOOSUE_LOG_H
 
