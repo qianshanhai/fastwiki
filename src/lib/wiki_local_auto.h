@@ -90,6 +90,9 @@ struct local __local_en[] = {
 	{"FW_AUDIO_ENBALE_TXT", "Enable audio"}, 
 	{"FW_AUDIO_SELECT_FILE", "Select one audio file"}, 
 	{"FW_AUDIO_MAYBE_DAMAGE", "The audio file had damage: "}, 
+	{"FW_DATA_PATH_TXT", "Select folder of fastwiki files, you can select more than one folder:"}, 
+	{"FW_DATA_PATH_1", "Folder 1 "}, 
+	{"FW_DATA_PATH_2", "Folder 2"}, 
 	{NULL, NULL} 
 };
 
@@ -182,6 +185,9 @@ struct local __local_zh[] = {
 	{"FW_AUDIO_ENBALE_TXT", "开启语音功能"}, 
 	{"FW_AUDIO_SELECT_FILE", "选择语音文件"}, 
 	{"FW_AUDIO_MAYBE_DAMAGE", "语音文件已经损坏: "}, 
+	{"FW_DATA_PATH_TXT", "选择数据文件目录, 您可以选择多个数据文件目录: "}, 
+	{"FW_DATA_PATH_1", "数据文件目录 1"}, 
+	{"FW_DATA_PATH_2", "数据文件目录 2"}, 
 	{NULL, NULL} 
 };
 
