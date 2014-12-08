@@ -65,6 +65,9 @@ public class FastwikiSetting extends SherlockActivity {
 	TextView m_body_image_path = null;
 	TextView m_audio_path = null;
 
+	TextView m_data_path_1 = null;
+	TextView m_data_path_2 = null;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState); 
@@ -247,6 +250,7 @@ public class FastwikiSetting extends SherlockActivity {
 		m_audio_path = (TextView)findViewById(R.id.audio_path);
 
 		show_audio_path();
+		set_data_path_flag();
 	}
 
 	private void show_audio_path()
@@ -254,6 +258,49 @@ public class FastwikiSetting extends SherlockActivity {
 		String m = GetAudioPath();
 
 		m_audio_path.setText(m);
+	}
+
+	private void set_data_path_flag()
+	{
+		TextView tmp;
+		
+		tmp = (TextView)findViewById(R.id.data_path);
+		tmp.setText(Html.fromHtml(N("FW_DATA_PATH_TXT")));
+
+		tmp = (TextView)findViewById(R.id.data_path_1);
+		tmp.setText(Html.fromHtml(N("FW_DATA_PATH_1")));
+
+		tmp = (TextView)findViewById(R.id.data_path_2);
+		tmp.setText(Html.fromHtml(N("FW_DATA_PATH_2")));
+
+		Button button1 = (Button)findViewById(R.id.select_data_path_1);
+		button1.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View v) {
+				/* "2" for select data folder */
+				startIntentForClass(202, FileBrowse.class, "2", N("FW_SELECT_DATA_PATH"));
+			}
+		});
+
+		Button button2 = (Button)findViewById(R.id.select_data_path_2);
+		button2.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View v) {
+				startIntentForClass(203, FileBrowse.class, "2", N("FW_SELECT_DATA_PATH"));
+			}
+		});
+
+		m_data_path_1 = (TextView)findViewById(R.id.data_folder_1);
+		m_data_path_2 = (TextView)findViewById(R.id.data_folder_2);
+
+		show_data_path();
+	}
+
+	private void show_data_path()
+	{
+		String [] m = GetDataPath();
+
+		m_data_path_1.setText(m[0]);
+		m_data_path_2.setText(m[1]);
+
 	}
 
 	private void set_full_text()
@@ -434,6 +481,14 @@ public class FastwikiSetting extends SherlockActivity {
 				show_audio_path();
 			}
 		}
+
+		if (requestCode == 202 || requestCode == 203) {
+			String path = bundle.getString("path");
+			if (!path.equals("")) {
+				SetDataPath(path, requestCode - 202); /* (path, 0 or 1) */
+				show_data_path();
+			}
+		}
 	}
 
 	public native int GetMutilLangListMode();
@@ -476,4 +531,7 @@ public class FastwikiSetting extends SherlockActivity {
 
 	public native String GetAudioPath();
 	public native int SetAudioPath(String m);
+
+	public native int SetDataPath(String path, int flag);
+	public native String [] GetDataPath();
 }

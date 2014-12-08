@@ -9,6 +9,8 @@
 #include <dirent.h>
 #include <jni.h>
 
+#include "soosue_log.h"
+
 #define MAX_KEY_LEN 64
 
 #include "wiki_local.h"
@@ -67,9 +69,16 @@ Java_com_hace_fastwiki_Library_SetSelectLang(JNIEnv* env, jobject thiz, jintArra
 }
 
 jint
-Java_com_hace_fastwiki_Library_ScanSDcard(JNIEnv* env, jobject thiz)
+Java_com_hace_fastwiki_FastWiki_ScanDataPath(JNIEnv* env, jobject thiz)
 {
-	return m_wiki_manage->wiki_scan_sdcard();
+	int n;
+
+	LOG("test1\n");
+
+	n = m_wiki_manage->wiki_scan_data_path();
+	LOG("test2\n");
+
+	return n;
 }
 
 jstring
@@ -912,6 +921,11 @@ Java_com_hace_fastwiki_FileBrowse_RealPath(JNIEnv* env, jobject thiz, jstring pa
 	return env->NewStringUTF(buf);
 }
 
+int is_fastwiki_data(const char *fname)
+{
+	return 1;
+}
+
 #define FW_AUDIO_PREFIX "fastwiki.audio."
 
 int is_fastwiki_audio(const char *fname)
@@ -967,9 +981,10 @@ Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring pa
 	const char *file = my_get_string(path);
 	typedef int (*func_t)(const char *fname);
 	
-	func_t func[2] = {
+	func_t func[3] = {
 		is_image_fname,
 		is_fastwiki_audio,
+		is_fastwiki_data,
 	};
 
 	DIR *dirp;
@@ -979,7 +994,8 @@ Java_com_hace_fastwiki_FileBrowse_GetFiles(JNIEnv* env, jobject thiz, jstring pa
 	memset(buf, 0, sizeof(path_t));
 
 	idx_flag = atoi(my_get_string(flag));
-	if (!(idx_flag >= 0 && idx_flag <= 1))
+
+	if (!(idx_flag >= 0 && idx_flag <= 2))
 		idx_flag = 0;
 
 	if ((dirp = opendir(file)) == NULL)
@@ -1085,6 +1101,39 @@ Java_com_hace_fastwiki_FastWiki_SoundFD(JNIEnv *env, jobject thiz)
 	env->SetIntField(ret, field_fd, fd);
 
 	return ret;
+}
+
+jint
+Java_com_hace_fastwiki_FastwikiSetting_SetDataPath(JNIEnv *env, jobject thiz, jstring _path, jint flag)
+{
+	const char *path = my_get_string(_path);
+
+	return m_wiki_config->wc_add_dir(path, flag);
+}
+
+jobjectArray
+Java_com_hace_fastwiki_FastwikiSetting_GetDataPath(JNIEnv *env, jobject thiz)
+{
+	char dir[2][256];
+	jobjectArray args;
+	jstring str;
+
+	args = env->NewObjectArray(2, env->FindClass("java/lang/String"),0);
+
+	m_wiki_config->wc_get_dir(dir[0], dir[1]);
+
+	for (int i = 0; i < 2; i++) {
+		str = env->NewStringUTF(dir[i]);
+		env->SetObjectArrayElement(args, i, str);
+	}
+	
+	return args;
+}
+
+jobjectArray
+Java_com_hace_fastwiki_FastWiki_GetDataPath(JNIEnv *env, jobject thiz)
+{
+	return Java_com_hace_fastwiki_FastwikiSetting_GetDataPath(env, thiz);
 }
 
 #ifdef __cplusplus

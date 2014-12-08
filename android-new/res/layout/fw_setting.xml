@@ -26,7 +26,7 @@
 				android:layout_height="wrap_content" />
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -48,7 +48,7 @@
 				android:layout_height="wrap_content" />
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -70,7 +70,7 @@
 				android:layout_height="wrap_content" />
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -96,7 +96,7 @@
 				/>
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -118,7 +118,7 @@
 				android:layout_height="wrap_content" />
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -144,7 +144,7 @@
 				/>
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -204,7 +204,7 @@
 				/>
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -227,7 +227,7 @@
 				android:layout_height="wrap_content" />
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -253,7 +253,7 @@
 				/>
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -295,7 +295,7 @@
 			/> 
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -317,7 +317,7 @@
 				android:layout_height="wrap_content" />
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 
@@ -343,7 +343,7 @@
 				/>
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 		<LinearLayout
@@ -384,7 +384,111 @@
 			/> 
 		</LinearLayout>
 
-		<View android:layout_height="2px"
+		<View android:layout_height="5px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/data_path"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="data path"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+		</LinearLayout>
+
+		<View android:layout_height="3px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/data_path_1"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="data_path_1"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+			<Button
+				android:id="@+id/select_data_path_1"
+				android:layout_width="120dip"  
+				android:layout_height="wrap_content"  
+				android:text="....."
+				/>
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/data_folder_1"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text=""
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+		</LinearLayout>
+
+		<View android:layout_height="3px"
+			   android:layout_width="fill_parent"
+			   android:background="?android:attr/listDivider"/>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/data_path_2"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text="data_path_2"
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+			<Button
+				android:id="@+id/select_data_path_2"
+				android:layout_width="120dip"  
+				android:layout_height="wrap_content"  
+				android:text="....."
+				/>
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:orientation="horizontal"  
+			>
+
+		<TextView android:id="@+id/data_folder_2"
+			android:layout_width="wrap_content"  
+			android:layout_height="wrap_content"  
+			android:textColor="#ffffff"
+			android:text=""
+			android:textSize="18dip"
+			android:layout_weight="1"
+			/> 
+		</LinearLayout>
+
+		<View android:layout_height="3px"
 			   android:layout_width="fill_parent"
 			   android:background="?android:attr/listDivider"/>
 

@@ -240,7 +240,7 @@ class WikiManage {
 		int wiki_translate(const char *key, char **buf);
 
 		int wiki_page_last_read(char **buf, int *size);
-		int wiki_scan_sdcard();
+		int wiki_scan_data_path();
 
 		int wiki_full_search(const char *key, char **buf, int *size, int page);
 		int wiki_full_search_one_page(char **buf, int *size, int page);

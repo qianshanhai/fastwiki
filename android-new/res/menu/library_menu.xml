@@ -10,9 +10,4 @@
 		android:showAsAction="always"
 		android:title="Select All">  
 	</item>  
-	<item  
-		android:id="@+id/library_menu_scan_sdcard"
-		android:showAsAction="always"
-		android:title="Scan">  
-	</item>  
 </menu>

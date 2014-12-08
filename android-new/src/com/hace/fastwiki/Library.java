@@ -110,7 +110,6 @@ public class Library extends SherlockActivity {
 
 		menu.findItem(R.id.library_menu_ok).setTitle(N("FW_LIBRARY_OK"));
 		menu.findItem(R.id.library_menu_all).setTitle(N("FW_LIBRARY_SELECT_ALL"));
-		menu.findItem(R.id.library_menu_scan_sdcard).setTitle(N("FW_LIBRARY_SCAN"));
 
 		return super.onCreateOptionsMenu(menu);
 	}
@@ -134,15 +133,6 @@ public class Library extends SherlockActivity {
 					m_select_flag = true;
 					select_all();
 				}
-				break;
-
-			case R.id.library_menu_scan_sdcard:
-				show_short_msg(N("FW_LIBRARY_SCAN_START"));
-				ScanSDcard();
-				m_lang  = WikiLangList();
-				init_idx_backup();
-				m_adapter.notifyDataSetChanged();
-				show_short_msg(N("FW_LIBRARY_SCAN_DONE"));
 				break;
 			default:
 				return super.onOptionsItemSelected(item);
@@ -284,7 +274,6 @@ public class Library extends SherlockActivity {
 	public native String[] WikiLangList();
 	public native String[] WikiCurrLang();
 	public native String [] WikiListColor();
-	public native int ScanSDcard();
 	public native String N(String name);
 	public native int WikiGetFullScreenFlag();
 }

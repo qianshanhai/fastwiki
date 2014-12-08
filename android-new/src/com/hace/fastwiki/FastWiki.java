@@ -99,6 +99,8 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.SubMenu;
 import com.actionbarsherlock.view.MenuItem;
 
+import android.os.Build;
+
 import android.util.Log;
 
 public class FastWiki extends SherlockFragmentActivity {
@@ -178,6 +180,8 @@ public class FastWiki extends SherlockFragmentActivity {
 
 	FileDescriptor m_audio_fd = null;
 	MediaPlayer m_play = null;
+
+	String [] m_last_lang = null;
 	/*
 	private Handler m_handler;
 	private Thread m_thread;
@@ -244,6 +248,7 @@ public class FastWiki extends SherlockFragmentActivity {
 				super.onPageFinished(view, url);
 				if (load_js) {
 					my_view.loadUrl("javascript:get_data()");
+					my_view.loadUrl("javascript:super_bookmark()");
 					load_js = false;
 				}
 				WikiLoadOnePageDone(); // TODO 
@@ -254,7 +259,10 @@ public class FastWiki extends SherlockFragmentActivity {
 			}
 
 			public boolean shouldOverrideUrlLoading(WebView view, String url) {
+				//my_view.loadUrl("javascript:set_pos()"); // TODO
+
 				imm.hideSoftInputFromWindow(myUrl.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+
 				String [] x = url.split(":");
 				if (x[0].equals("au")) {
 					audio_play(x[1]);
@@ -372,6 +380,12 @@ public class FastWiki extends SherlockFragmentActivity {
 
 	private void change_to_list_view()
 	{
+		/*
+		if (!m_list_view_flag) {
+			my_view.loadUrl("javascript:set_pos()");
+		}
+		*/
+
 		my_view.setVisibility(View.GONE);
 		m_list_view.setVisibility(View.VISIBLE);
 		m_list_view_flag = true;
@@ -549,6 +563,7 @@ public class FastWiki extends SherlockFragmentActivity {
 				startIntentForClass(1, Library.class);
 				return true;
 			case R.id.setting:
+				m_last_lang = GetDataPath();
 				startIntentForClass(0, FastwikiSetting.class);
 				return true;
 			case R.id.history:
@@ -609,6 +624,7 @@ public class FastWiki extends SherlockFragmentActivity {
 				break;
 
 			case R.id.forward:
+			//	my_view.loadUrl("javascript:set_pos()");
 				String [] t = WikiForward();
 				if (t[1].equals(""))
 					break;
@@ -658,6 +674,9 @@ public class FastWiki extends SherlockFragmentActivity {
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
+
+			//my_view.loadUrl("javascript:set_pos()");
+
 			String [] t = WikiBack();
 			if (t[1].equals("")) {
 				return true;
@@ -685,17 +704,22 @@ public class FastWiki extends SherlockFragmentActivity {
 		return super.onKeyDown(keyCode, event);
 	}
 
-	/* for android 4.0.x */
+	/*
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event) {
-		int act = event.getAction();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+			// for android 4.1 and above version 
+			int act = event.getAction();
 
-		if (act == MotionEvent.ACTION_MOVE) {
-			my_view.loadUrl("javascript:set_pos()");
+			if (act == MotionEvent.ACTION_MOVE) {
+				my_view.loadUrl("javascript:set_pos()");
+			}
 		}
 		return super.dispatchTouchEvent(event);
 	}
+	*/
 
+	/*
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		int act = event.getAction();
@@ -706,6 +730,7 @@ public class FastWiki extends SherlockFragmentActivity {
 
 		return super.onTouchEvent(event);
 	}
+	*/
 
 	public void debug(String h)
 	{
@@ -788,6 +813,21 @@ public class FastWiki extends SherlockFragmentActivity {
 		alert.show();
 	}
 
+	private int cmp_last_lang()
+	{
+		String [] curr = GetDataPath();
+
+		if (curr.length != m_last_lang.length)
+			return 0;
+
+		for (int i = 0; i < curr.length; i++) {
+			if (!curr[i].equals(m_last_lang[i]))
+				return 0;
+		}
+
+		return 1;
+	}
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -796,6 +836,10 @@ public class FastWiki extends SherlockFragmentActivity {
 		if (requestCode == 0) {
 			switch_full_screen();
 			audio_reinit();
+			if (cmp_last_lang() == 0) {
+				ScanDataPath();
+				m_last_lang = GetDataPath();
+			}
 			return;
 		}
 
@@ -956,6 +1000,8 @@ public class FastWiki extends SherlockFragmentActivity {
 	public native String [] AudioFind(String title);
 
 	public native int AudioReinit();
+	public native String [] GetDataPath();
+	public native int ScanDataPath();
 
 	static {
 		System.loadLibrary("fastwiki");

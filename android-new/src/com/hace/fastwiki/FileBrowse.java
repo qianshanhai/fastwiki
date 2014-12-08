@@ -111,6 +111,10 @@ public class FileBrowse extends SherlockActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.fb_menu_ok:
+				if (m_file_flag.equals("2")) {
+					return_val(m_curr_path);
+					return true;
+				}
 				if (m_last_text == null) {
 					AlertDialog.Builder alert = new AlertDialog.Builder(this);
 					alert.setMessage(N("FW_FILE_SELECT_ONE"));
@@ -134,8 +138,8 @@ public class FileBrowse extends SherlockActivity {
 							alert.show();
 							return true;
 						}
+						return_val(m);
 					}
-					return_val(m);
 				}
 				break;
 			default:

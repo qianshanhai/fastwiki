@@ -168,13 +168,12 @@ class WikiConfig {
 		const char *wc_get_audio_path();
 		int wc_set_audio_path(const char *path);
 
+		int wc_add_dir(const char *dir, int flag);
+		int wc_get_dir(char *dir1, char *dir2);
+
 	private:
 		int wc_init_config();
 		int wc_init_lang();
-};
-
-extern "C" {
-	int LOG(const char *fmt, ...);
 };
 
 #endif

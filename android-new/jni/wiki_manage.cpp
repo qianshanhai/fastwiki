@@ -7,6 +7,8 @@
 #include <stdarg.h>
 #include <sys/time.h>
 
+#include "soosue_log.h"
+
 #include "wiki_manage.h"
 #include "wiki_common.h"
 #include "wiki_local.h"
@@ -59,8 +61,10 @@ static void *wiki_manage_start_socket_thread(void *arg)
 
 int WikiManage::wiki_init()
 {
-
 	struct timeval now;
+
+	if (LOG_INIT(LOG_MIN, BASE_DIR, "fastwiki.log") == -1)
+		LOG_INIT(LOG_MIN, "/data/local/tmp", "fastwiki.log");
 
 	gettimeofday(&now, NULL);
 	srand(now.tv_sec | now.tv_usec);
@@ -1741,11 +1745,18 @@ struct one_lang *WikiManage::wiki_get_lang_addr(const char *lang)
 	return NULL;
 }
 
-int WikiManage::wiki_scan_sdcard()
+int WikiManage::wiki_scan_data_path()
 {
+	LOG("0\n");
+
 	memset(m_search_buf.key, 0, sizeof(m_search_buf.key));
 
+	LOG("1\n");
+
 	m_wiki_config->wc_scan_all();
+
+	LOG("2\n");
+
 	wiki_lang_init();
 
 	if (m_select_lang_total > 0)

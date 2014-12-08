@@ -16,33 +16,6 @@
 #include "wiki_config.h"
 #include "wiki_local.h"
 
-#ifndef WIN32
-int LOG(const char *fmt, ...)
-{
-	int n, now_n;
-	char now[64], buf[1024];
-	va_list ap;
-	struct timeval tv;
-	struct tm *tm;
-
-	gettimeofday(&tv, NULL);
-	tm = localtime(&tv.tv_sec);
-
-	now_n = sprintf(now, "[%02d:%02d:%02d.%03d] ",
-			(int)tm->tm_hour, (int)tm->tm_min, (int)tm->tm_sec, (int)(tv.tv_usec / 1000));
-
-	va_start(ap, fmt);
-	n = vsnprintf(buf + 64, sizeof(buf) - 64, fmt, ap);
-	va_end(ap);
-
-	memcpy(buf + 64 - now_n, now, now_n);
-
-	file_append(LOG_FILE, buf + 64 - now_n, n + now_n);
-
-	return n;
-}
-#endif
-
 WikiConfig::WikiConfig()
 {
 	m_config = NULL;
@@ -176,14 +149,31 @@ int WikiConfig::wc_init_lang()
 
 int WikiConfig::wc_scan_all()
 {
-	char *dir[] = { "/storage", "/mnt", NULL};
-
-	m_config->dir_total = m_scan_file->wsf_fetch_fw_dir(m_config->base_dir, sizeof(m_config->base_dir) / sizeof(fw_dir_t), dir, 2);
 	wc_init_lang();
 
 	if (m_file_total > 0) {
 		wc_set_translate_default(m_file[0].lang);
 	}
+
+	return 0;
+}
+
+int WikiConfig::wc_add_dir(const char *dir, int flag)
+{
+	if (flag < 0 || flag > 1)
+		return 0;
+
+	strncpy(m_config->base_dir[flag].path, dir, 128);
+
+	m_config->dir_total = 2;
+
+	return 1;
+}
+
+int WikiConfig::wc_get_dir(char *dir1, char *dir2)
+{
+	strcpy(dir1, m_config->base_dir[0].path);
+	strcpy(dir2, m_config->base_dir[1].path);
 
 	return 0;
 }
