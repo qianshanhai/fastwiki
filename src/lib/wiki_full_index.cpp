@@ -281,6 +281,9 @@ int WikiFullIndex::wfi_create_init(const char *z_flag, int index_total, const ch
 	if (m_bitmap_size % 8)
 		m_bitmap_size += 8 - m_bitmap_size % 8;
 
+	if (m_bitmap_size < 8)
+		m_bitmap_size = 8;
+
 	m_comp_buf_len = m_bitmap_size + 512*1024;
 
 	m_bitmap = (unsigned char *)malloc(m_bitmap_size);
@@ -483,6 +486,7 @@ int WikiFullIndex::wfi_add_page(int page_idx, const char *page, int page_len, in
 
 	key_hash->sh_reset();
 	while (key_hash->sh_read_next(&key, (void **)NULL) == _SHASH_FOUND) {
+		//LOG("word:%s.\n", key.word);
 		wfi_add_one_word(key.word, m_page_index_pos);
 	}
 
@@ -1219,7 +1223,7 @@ int WikiFullIndex::wfi_rewrite_file_head(const struct fidx_head *h)
 #define _(x) \
 	do { \
 		char f[128]; \
-		sprintf(f, "%-12s: %%%s\n", #x, ((long)&h->x == (long)h->x) ? "s" : "d"); \
+		sprintf(f, "%-12s: %%%s\n", #x, ((long)(&(h->x)) == (long)(h->x)) ? "s" : "d"); \
 		printf(f, h->x); \
 	} while (0)
 
