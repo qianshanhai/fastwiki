@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "soosue_log.h"
 #include "q_util.h"
 
 #include "crc32sum.h"
@@ -199,9 +200,6 @@ int SHash::sh_fd_init_ro(int _fd, unsigned int pos)
 
 #define sh_fd_get_rec(_h) ((_h)->hash * sizeof(unsigned int) + sizeof(struct shm_hash_head))
 #define sh_fd_get_pos(_n) ((_n - 1) * ((key_len + value_len) + sizeof(unsigned int)))
-
-#include "q_util.h"
-#include "q_log.h"
 
 int SHash::sh_fd_find(const void *key, void *value)
 {

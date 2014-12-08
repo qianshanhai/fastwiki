@@ -3,7 +3,6 @@
  */
 
 #include <zlib.h>
-#include <bzlib.h>
 
 int gunzip(char *out, int out_len, const char *in, int in_len);
 int gzip(char *out, int out_len, const char *in, int in_len);
@@ -27,6 +26,8 @@ inline int gzip(char *out, int out_len, const char *in, int in_len)
 }
 
 #ifndef FW_NJI
+
+#include <bzlib.h>
 
 inline int bzip2(char *out, int out_len, const char *in, int in_len)
 {

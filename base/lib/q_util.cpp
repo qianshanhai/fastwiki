@@ -475,7 +475,7 @@ ssize_t pread(int fd, void *buf, size_t count, off_t offset)
 {
 	OVERLAPPED o = {0};
 	HANDLE fh = (HANDLE)_get_osfhandle(fd);
-	uint64_t off = offset;
+	unsigned long long off = offset;
 	DWORD bytes;
 	BOOL ret;
 
