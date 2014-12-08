@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #include "q_util.h"
-#include "q_log.h"
+#include "soosue_log.h"
 
 #include "wiki_data.h"
 #include "wiki_index.h"

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "q_log.h"
+#include "soosue_log.h"
 
 #include "wiki_index.h"
 #include "wiki_data.h"
@@ -75,7 +75,7 @@ int WikiData::wd_init(const fw_files_t file, int total)
 
 	for (i = 0; i < m_fd_total; i++) {
 		if (m_fd_idx[i] == -1) {
-			printf("err total=%d\n", total);
+			LOG("err total=%d\n", total);
 			return -1;
 		}
 	}

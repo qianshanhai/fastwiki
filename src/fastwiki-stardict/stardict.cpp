@@ -13,7 +13,7 @@
 #include "prime.h"
 #include "q_util.h"
 #include "s_hash.h"
-#include "q_log.h"
+#include "soosue_log.h"
 #include "crc32sum.h"
 
 #include "wiki_lua.h"

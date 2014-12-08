@@ -10,10 +10,10 @@
 #include <dirent.h>
 #include <stdarg.h>
 
+#include "soosue_log.h"
+
 #include "q_util.h"
 #include "wiki_scan_file.h"
-
-#include "q_log.h"
 
 WikiScanFile::WikiScanFile()
 {
@@ -158,6 +158,9 @@ int WikiScanFile::wsf_scan_sdcard(const char *dir)
 
 	while ((d = readdir(dirp))) {
 		if (d->d_name[0] == '.')
+			continue;
+
+		if (strncasecmp(d->d_name, "DCIM", 4) == 0)
 			continue;
 
 		snprintf(file, sizeof(file), "%s/%s", dir, d->d_name);

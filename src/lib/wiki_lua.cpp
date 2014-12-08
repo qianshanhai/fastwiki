@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <iconv.h>
 
-#include "q_log.h"
+#include "soosue_log.h"
 #include "q_util.h"
 #include "wiki_lua.h"
 
@@ -50,7 +50,13 @@ int lua_iconv(lua_State *L)
 	char *out = m_conv_buf;
 	size_t out_len = MAX_ICONV_BUF_SIZE;
 
-    if (iconv(m_cd, &src, &len, &out, &out_len) == (size_t)-1) {
+#ifdef _WIN32
+#define iconv_const_char (const char **)
+#else
+#define iconv_const_char
+#endif
+
+    if (iconv(m_cd, iconv_const_char &src, &len, &out, &out_len) == (size_t)-1) {
 		LOG("convert %s error.\n", src);
 		lua_pushstring(L, "");
 	} else {

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "q_log.h"
+#include "soosue_log.h"
 #include "wiki_audio.h"
 
 int main(int argc, char *argv[])

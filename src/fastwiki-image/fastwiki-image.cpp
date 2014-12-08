@@ -11,7 +11,7 @@
 #include <dirent.h>
 
 #include "q_util.h"
-#include "q_log.h"
+#include "soosue_log.h"
 
 #include "wiki_common.h"
 #include "wiki_image.h"

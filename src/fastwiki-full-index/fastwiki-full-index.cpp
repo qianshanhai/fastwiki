@@ -98,6 +98,7 @@ static void *wiki_full_index_thread(void *arg)
 	while (wiki_fetch_one_page(&idx, buf, 0, &n)) {
 		if ((n = gunzip(tmp, max_page_size, buf, n)) > 0) {
 			tmp[n] = 0;
+			//LOG("tmp:%s\n", tmp);
 			m_full_index->wfi_add_page(idx, tmp, n, pthread_idx);
 		}
 	}

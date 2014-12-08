@@ -8,7 +8,8 @@
 #include <string.h>
 #include <errno.h>
 
-#include "q_log.h"
+#include "soosue_log.h"
+
 #include "q_util.h"
 #include "prime.h"
 #include "crc32sum.h"
