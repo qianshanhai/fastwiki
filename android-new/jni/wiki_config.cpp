@@ -160,10 +160,39 @@ int WikiConfig::wc_scan_all()
 
 int WikiConfig::wc_add_dir(const char *dir, int flag)
 {
+	char *tmp[2] = {
+		m_config->base_dir[0].path,
+		m_config->base_dir[1].path,
+	};
+
 	if (flag < 0 || flag > 1)
 		return 0;
 
-	strncpy(m_config->base_dir[flag].path, dir, 128);
+	strncpy(tmp[flag], dir, 128);
+
+	if (flag == 1) {
+		if (strlen(tmp[0]) == 0) {
+			strncpy(tmp[1], dir, 128);
+			m_config->dir_total = 1;
+			return 1;
+		}
+	} else {
+		if (strlen(tmp[1]) == 0) {
+			m_config->dir_total = 1;
+			return 1;
+		}
+	}
+
+	if (strncmp(tmp[0], tmp[1], strlen(tmp[1])) == 0) {
+		strcpy(tmp[0], tmp[1]);
+		m_config->dir_total = 1;
+		return 1;
+	}
+	
+	if (strncmp(tmp[1], tmp[0], strlen(tmp[0])) == 0) {
+		m_config->dir_total = 1;
+		return 0;
+	}
 
 	m_config->dir_total = 2;
 
