@@ -1,1 +1,1 @@
-Fastwiki already renamed to "XYZ reader", refer https://www.xyzread.com 
+Fastwiki already renamed to "XYZ reader", refer https://www.xyzreader.com 
